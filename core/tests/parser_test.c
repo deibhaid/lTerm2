@@ -47,7 +47,7 @@ test_ascii_and_csi(void)
     assert(log.tokens[0].ascii.length == 3);
     assert(memcmp(log.tokens[0].ascii.buffer, "abc", 3) == 0);
 
-    assert(log.tokens[1].type == LTERM_TOKEN_CSI);
+    assert(log.tokens[1].type == LTERM_TOKEN_CSI_SGR);
     assert(log.tokens[1].code == 'm');
 
     assert(log.tokens[2].type == LTERM_TOKEN_ASCII);
