@@ -267,11 +267,11 @@ lterm_parser_feed(lterm_parser *parser,
                 need_more_data = true;
                 break;
             }
-            bool consumed = false;
+            bool token_applied = false;
             if (parser->screen) {
-                consumed = apply_token_to_screen(parser, &token);
+                token_applied = apply_token_to_screen(parser, &token);
             }
-            if (!consumed && token.type != LTERM_TOKEN_NONE && token.type != LTERM_TOKEN_WAIT) {
+            if (!token_applied && token.type != LTERM_TOKEN_NONE && token.type != LTERM_TOKEN_WAIT) {
                 callback(&token, user_data);
             }
             lterm_token_free(&token);

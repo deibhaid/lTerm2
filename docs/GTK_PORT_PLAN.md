@@ -6,8 +6,8 @@
 - Provide a path for iterative releases: start with terminal/session core, then layer on advanced UI/automation features.
 
 ### 2. Current Architecture Snapshot
-- **UI & App lifecycle** – Entirely AppKit/Cocoa: e.g. `iTermApplication`/`PseudoTerminal`/`PreferencePanel` rely on `NSApplication`, `NSWindow`, `NSView`, Interface Builder `.xib`s, Touch Bar APIs, and Apple-specific notifications.
-- **Terminal/session core** – Objective-C classes (`PTYSession`, `PTYTextView`, `PseudoTerminal`, `iTermController`) implement rendering, keyboard handling, tmux integration, triggers, scripting hooks, etc., with substantial platform-neutral logic but intertwined with AppKit types and categories.
+- **UI & App lifecycle** – Entirely AppKit/Cocoa: e.g. `Application`/`PseudoTerminal`/`PreferencePanel` rely on `NSApplication`, `NSWindow`, `NSView`, Interface Builder `.xib`s, Touch Bar APIs, and Apple-specific notifications.
+- **Terminal/session core** – Objective-C classes (`PTYSession`, `PTYTextView`, `PseudoTerminal`, upstream controller classes) implement rendering, keyboard handling, tmux integration, triggers, scripting hooks, etc., with substantial platform-neutral logic but intertwined with AppKit types and categories.
 - **Automation & integrations** – AppleScript dictionary from the upstream macOS app (`automation.sdef`), macOS security (Keychain, TCC prompts, entitlements), Sparkle updater, Touch ID, Accessibility listeners, Notification Center.
 - **Build tooling** – Xcode projects, Mac frameworks, entitlements, sandbox helpers. No Meson/CMake or Linux CI artifacts yet.
 

@@ -32,7 +32,7 @@ core/
 ### 4. Migration Steps
 1. **Token structs** *(in progress)* – shared enums/structs complete (see above). Remaining work: mixed ASCII CR/LF helpers, gang tokens, and unit tests mirroring `VT100TokenTests`.
 2. **State machine** *(done)* – `lterm_state_machine_*` APIs now provide the transition framework formerly implemented by `VT100StateMachine`.
-3. **Parser** – move `VT100Parser`/`VT100CSIParser` into the new C state machine, using the newly added `lterm_reader`, `lterm_parser_context`, and token structs. Replace categories (`NSData+iTerm`, `NSArray+iTerm`) with helper functions. Placeholder parser currently lives in `core/src/parser/lterm_parser.c`.
+3. **Parser** – move `VT100Parser`/`VT100CSIParser` into the new C state machine, using the newly added `lterm_reader`, `lterm_parser_context`, and token structs. Replace categories (`NSData+Terminal`, `NSArray+Terminal`) with helper functions. Placeholder parser currently lives in `core/src/parser/lterm_parser.c`.
 4. **Terminal delegate** – implement the methods that interpret tokens and call delegate callbacks; ensure feature flags (keypad mode, wraparound, moreFix, etc.) remain.
 5. **Wire to GTK shell** – once the C API is stable, update macOS code (`PTYSession`) to use it via Objective-C wrappers for shared behavior, while the GTK shell uses it directly.
 
