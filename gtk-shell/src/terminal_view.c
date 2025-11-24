@@ -49,6 +49,23 @@ color_from_index(uint8_t index, double *r, double *g, double *b)
 }
 
 static void
+terminal_view_click(GtkGestureClick *gesture,
+                    int n_press,
+                    double x,
+                    double y,
+                    gpointer user_data)
+{
+    (void)n_press;
+    (void)x;
+    (void)y;
+    (void)user_data;
+    GtkWidget *widget = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(gesture));
+    if (widget) {
+        gtk_widget_grab_focus(widget);
+    }
+}
+
+static void
 terminal_view_destroy(gpointer data)
 {
     TerminalView *view = data;
@@ -181,6 +198,10 @@ terminal_view_new(void)
     gtk_widget_set_vexpand(area, TRUE);
     gtk_widget_set_focusable(area, TRUE);
     gtk_widget_set_focus_on_click(area, TRUE);
+    GtkGesture *click = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), GDK_BUTTON_PRIMARY);
+    g_signal_connect(click, "pressed", G_CALLBACK(terminal_view_click), NULL);
+    gtk_widget_add_controller(area, GTK_EVENT_CONTROLLER(click));
 
     view->area = area;
     g_object_set_data_full(G_OBJECT(area), "terminal-view", view, NULL);
