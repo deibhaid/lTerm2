@@ -18,6 +18,20 @@
 
 extern char **environ;
 
+static bool
+has_suffix(const char *value, const char *suffix)
+{
+    if (!value || !suffix) {
+        return false;
+    }
+    size_t value_len = strlen(value);
+    size_t suffix_len = strlen(suffix);
+    if (suffix_len > value_len) {
+        return false;
+    }
+    return strncmp(value + value_len - suffix_len, suffix, suffix_len) == 0;
+}
+
 static void
 set_nonblock(int fd)
 {
@@ -87,12 +101,44 @@ lterm_pty_spawn_shell(lterm_pty *pty, const char *shell_path)
     if (!pty) {
         return false;
     }
-    const char *shell = (shell_path && shell_path[0]) ? shell_path : getenv("SHELL");
+    const char *shell = NULL;
+    if (shell_path && shell_path[0]) {
+        shell = shell_path;
+    } else {
+        const char *override = getenv("LTERM_SHELL");
+        if (override && override[0]) {
+            shell = override;
+        }
+    }
+    if (!shell || !shell[0]) {
+        shell = getenv("SHELL");
+    }
     if (!shell || !shell[0]) {
         shell = "/bin/bash";
     }
-    char *const argv[] = {(char *)shell, "-l", NULL};
-    return lterm_pty_spawn(pty, shell, argv, NULL);
+    const bool force_login = getenv("LTERM_LOGIN_SHELL") != NULL;
+
+    if (force_login) {
+        char *const argv_login[] = {(char *)shell, "-l", NULL};
+        return lterm_pty_spawn(pty, shell, argv_login, NULL);
+    }
+
+    if (has_suffix(shell, "bash")) {
+        char *const argv_safe[] = {(char *)shell, "--noprofile", "--norc", "-i", NULL};
+        return lterm_pty_spawn(pty, shell, argv_safe, NULL);
+    }
+    if (has_suffix(shell, "zsh")) {
+        char *const argv_zsh[] = {(char *)shell, "-f", NULL};
+        return lterm_pty_spawn(pty, shell, argv_zsh, NULL);
+    }
+
+    char *const argv_interactive[] = {(char *)shell, "-i", NULL};
+    if (lterm_pty_spawn(pty, shell, argv_interactive, NULL)) {
+        return true;
+    }
+
+    char *const fallback[] = {"/bin/sh", "-i", NULL};
+    return lterm_pty_spawn(pty, "/bin/sh", fallback, NULL);
 }
 
 ssize_t
