@@ -180,6 +180,7 @@ terminal_view_new(void)
     gtk_widget_set_hexpand(area, TRUE);
     gtk_widget_set_vexpand(area, TRUE);
     gtk_widget_set_focusable(area, TRUE);
+    gtk_widget_set_focus_on_click(area, TRUE);
 
     view->area = area;
     g_object_set_data_full(G_OBJECT(area), "terminal-view", view, NULL);

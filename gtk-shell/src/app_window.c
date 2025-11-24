@@ -99,6 +99,9 @@ lterm_app_window_new(GtkApplication *app)
     GtkEventController *key_controller = gtk_event_controller_key_new();
     g_signal_connect(key_controller, "key-pressed", G_CALLBACK(terminal_key_pressed), bridge);
     gtk_widget_add_controller(terminal, key_controller);
+    GtkEventController *window_key_controller = gtk_event_controller_key_new();
+    g_signal_connect(window_key_controller, "key-pressed", G_CALLBACK(terminal_key_pressed), bridge);
+    gtk_widget_add_controller(window, window_key_controller);
     gtk_widget_grab_focus(terminal);
     g_object_set_data_full(G_OBJECT(window), "core-bridge", bridge, (GDestroyNotify)core_bridge_free);
 
