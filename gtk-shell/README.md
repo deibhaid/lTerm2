@@ -1,6 +1,6 @@
 # GTK Shell Prototype
 
-Minimal GTK4 application that will evolve into the Linux front-end for iTerm2.
+Minimal GTK4 application that will evolve into the Linux front-end for lTerm2.
 
 ## Build Prereqs
 - GTK 4 development packages (e.g., `gtk4`, `libadwaita-1-dev` optional).

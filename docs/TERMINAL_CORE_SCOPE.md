@@ -1,6 +1,6 @@
 ## Terminal Core Scope & Dependencies
 
-Goal: identify the Objective-C/C components that form iTerm2’s terminal engine so we can extract them into a platform-neutral library for the GTK shell.
+Goal: identify the Objective-C/C components that form the upstream terminal engine so we can extract them into a platform-neutral library for the GTK shell.
 
 ### 1. Major Functional Areas
 | Area | Key Files | Responsibility | Direct AppKit Usage? | Notes |
@@ -17,7 +17,7 @@ Goal: identify the Objective-C/C components that form iTerm2’s terminal engine
 - `NSColor`, `NSFont`, `NSImage`, `NSAttributedString` used in rendering and some screen helpers → introduce platform-neutral structs (`it_color`, `it_font_desc`), move conversions to UI layer.
 - `NSView`, `NSResponder`, `NSTimer`, `NSEvent` references inside `PTYTextView`/`PseudoTerminal` → GTK shell will provide replacements; core should only expose callbacks.
 - `NSNotificationCenter`, `NSUserDefaults` usage in core classes (e.g., `Screen`, `VT100Terminal`) → replace with lightweight observer/config injection.
-- Swift/Objective-C bridging headers referenced by `PTYSession` (e.g., `iTerm2SharedARC-Swift.h`) → ensure core avoids Swift-only helpers.
+- Swift/Objective-C bridging headers referenced by `PTYSession` (e.g., the upstream `SharedARC-Swift.h`) → ensure core avoids Swift-only helpers.
 
 ### 3. Extraction Strategy
 1. **Create `core/` (working name `libiterm-core`)** with Meson target building on macOS/Linux.

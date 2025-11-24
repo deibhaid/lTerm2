@@ -1,6 +1,6 @@
 ## VT100 Parser Migration Plan
 
-Purpose: capture the concrete steps needed to move the Objective-C parser/terminal stack into `libiterm-core` while keeping behavior parity with macOS iTerm2.
+Purpose: capture the concrete steps needed to move the Objective-C parser/terminal stack into `libiterm-core` while keeping behavior parity with the macOS upstream terminal.
 
 ### 1. Modules to Extract
 | Module | Source files | Notes |

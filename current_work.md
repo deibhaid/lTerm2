@@ -1,6 +1,6 @@
-# iTerm2 Linux Port – Feature Tracker
+# lTerm2 Feature Tracker
 
-Single source of truth for parity between macOS iTerm2 and the new GTK/Linux build.
+Single source of truth for parity between the macOS upstream terminal and the new GTK/Linux build.
 
 ## Snapshot
 - **Total features tracked:** 24

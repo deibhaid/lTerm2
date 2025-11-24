@@ -1,6 +1,6 @@
 # iterm-core (Work in Progress)
 
-Portable terminal engine extracted from iTerm2. This Meson project will eventually build the parser, screen, PTY, and tmux logic used by the GTK shell.
+Portable terminal engine extracted from the upstream macOS terminal project. This Meson project will eventually build the parser, screen, PTY, and tmux logic used by the GTK shell.
 
 ## Building
 ```bash

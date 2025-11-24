@@ -1,6 +1,6 @@
 # lTerm2
 
-Linux-first continuation of the iTerm2 project. This repo starts empty and only
+Linux-first continuation of the upstream macOS terminal project. This repo starts empty and only
 includes components that have been evaluated or rebuilt for Linux:
 
 - `core/` – platform-neutral terminal engine (Meson project that produces
@@ -30,7 +30,7 @@ meson compile -C builddir
 
 ## Porting workflow
 
-1. Keep macOS-specific code in the original `~/ws/github/iTerm2` repo.
+1. Keep macOS-specific code in the original upstream macOS repo that lives alongside this workspace.
 2. When a component becomes portable/rewritten for Linux, copy or recreate it
    here under `lTerm2/`.
 3. Track parity progress in `current_work.md`.
