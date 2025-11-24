@@ -20,7 +20,7 @@ Single source of truth for parity between macOS iTerm2 and the new GTK/Linux bui
 | Terminal Core | Terminal parser/tokenizer | VT100/VT220 state machine, CSI/OSC/DCS | Complete | `libiterm-core` parser migrated to C |
 | Terminal Core | Screen/grid + scrollback | Cell buffer, cursor, wrap, scrollback | Complete | `iterm_screen` with grid/scrollback wired to parser |
 | Terminal Core | GTK renderer bridge | Terminal view, Cairo/Pango output | Complete | `terminal_view` + `core_bridge` render demo |
-| Terminal Core | PTY/process plumbing | PTYTask replacement, session I/O | In progress | Basic PTY abstraction added, GTK shell now spawns login shell via libiterm-core |
+| Terminal Core | PTY/process plumbing | PTYTask replacement, session I/O | In progress | PTY abstraction + GTK shell spawn + keyboard input path forwarding to PTY |
 | Terminal Core | Mouse reporting | X10/SGR/URXVT modes | Pending | Depends on input handling |
 | Terminal Core | Advanced sequences (SGR, DEC modes) | Colors, fonts, DECSC/DECRC, DECSET | Pending | Parser stubs exist only |
 | Terminal Core | Split panes | Arbitrary split tree, resize, drag/drop | Pending | Needs GTK container |

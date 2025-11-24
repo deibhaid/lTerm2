@@ -2,6 +2,25 @@
 #include "core_bridge.h"
 #include "terminal_view.h"
 
+static gboolean
+terminal_key_pressed(GtkEventControllerKey *controller,
+                     guint keyval,
+                     guint keycode,
+                     GdkModifierType state,
+                     gpointer user_data)
+{
+    (void)controller;
+    (void)keycode;
+    CoreBridge *bridge = user_data;
+    if (!bridge) {
+        return GDK_EVENT_PROPAGATE;
+    }
+    if (core_bridge_handle_key(bridge, keyval, state)) {
+        return GDK_EVENT_STOP;
+    }
+    return GDK_EVENT_PROPAGATE;
+}
+
 static GtkWidget *
 create_placeholder(const char *title, GtkWidget **label_out)
 {
@@ -76,6 +95,10 @@ iterm_app_window_new(GtkApplication *app)
     if (!core_bridge_start_shell(bridge, NULL)) {
         core_bridge_feed_demo(bridge);
     }
+    GtkEventController *key_controller = gtk_event_controller_key_new();
+    g_signal_connect(key_controller, "key-pressed", G_CALLBACK(terminal_key_pressed), bridge);
+    gtk_widget_add_controller(terminal, key_controller);
+    gtk_widget_grab_focus(terminal);
     g_object_set_data_full(G_OBJECT(window), "core-bridge", bridge, (GDestroyNotify)core_bridge_free);
 
     return window;

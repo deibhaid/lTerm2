@@ -14,7 +14,7 @@ meson compile -C builddir
 ./builddir/src/iterm2-gtk
 ```
 
-The current window spawns your login shell inside a PTY, feeds it through `libiterm-core`, and renders the screen grid via a Cairo/Pango drawing area. The tab/status widgets are still placeholders.
+The current window spawns your login shell inside a PTY, feeds it through `libiterm-core`, and renders the screen grid via a Cairo/Pango drawing area. Keyboard input (printable characters, arrows, Enter, Backspace, etc.) is forwarded directly to the PTY so you can interact with the shell. The tab/status widgets are still placeholders.
 
 ## Next Steps
 - Expand libiterm-core coverage (full CSI/OSC/SGR handling, scrollback operations).

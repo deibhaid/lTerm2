@@ -89,6 +89,7 @@ terminal_view_new(void)
     gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(area), terminal_view_draw, view, terminal_view_destroy);
     gtk_widget_set_hexpand(area, TRUE);
     gtk_widget_set_vexpand(area, TRUE);
+    gtk_widget_set_focusable(area, TRUE);
 
     view->area = area;
     g_object_set_data_full(G_OBJECT(area), "terminal-view", view, NULL);

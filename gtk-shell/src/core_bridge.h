@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 typedef struct _CoreBridge CoreBridge;
 
@@ -12,4 +13,5 @@ CoreBridge *core_bridge_new(GtkWindow *window,
 void core_bridge_free(CoreBridge *bridge);
 void core_bridge_feed_demo(CoreBridge *bridge);
 bool core_bridge_start_shell(CoreBridge *bridge, const char *shell_path);
+bool core_bridge_handle_key(CoreBridge *bridge, guint keyval, GdkModifierType state);
 

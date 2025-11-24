@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "iterm_screen.h"
 #include "iterm_pty.h"
@@ -27,6 +28,40 @@ struct _CoreBridge {
 };
 
 static void parser_callback(const iterm_token *token, void *user_data);
+
+static bool
+pty_write_all(CoreBridge *bridge, const uint8_t *data, size_t length)
+{
+    if (!bridge || !data || !length || !iterm_pty_is_active(&bridge->pty)) {
+        return false;
+    }
+    ssize_t written = iterm_pty_write(&bridge->pty, data, length);
+    return written == (ssize_t)length;
+}
+
+static bool
+send_bytes_with_alt(CoreBridge *bridge, const uint8_t *data, size_t length, bool alt_prefix)
+{
+    if (!bridge || !data || !length) {
+        return false;
+    }
+    if (alt_prefix) {
+        const uint8_t esc = 0x1b;
+        if (!pty_write_all(bridge, &esc, 1)) {
+            return false;
+        }
+    }
+    return pty_write_all(bridge, data, length);
+}
+
+static bool
+send_sequence(CoreBridge *bridge, const char *sequence, bool alt_prefix)
+{
+    if (!sequence) {
+        return false;
+    }
+    return send_bytes_with_alt(bridge, (const uint8_t *)sequence, strlen(sequence), alt_prefix);
+}
 
 static void
 attach_screen(CoreBridge *bridge)
@@ -299,5 +334,119 @@ core_bridge_start_shell(CoreBridge *bridge, const char *shell_path)
 
     attach_screen(bridge);
     return true;
+}
+
+static bool
+handle_control_combo(uint8_t *buffer, size_t *length, guint keyval)
+{
+    if (keyval >= GDK_KEY_a && keyval <= GDK_KEY_z) {
+        buffer[0] = (uint8_t)(keyval - GDK_KEY_a + 1);
+        *length = 1;
+        return true;
+    }
+    if (keyval >= GDK_KEY_A && keyval <= GDK_KEY_Z) {
+        buffer[0] = (uint8_t)(keyval - GDK_KEY_A + 1);
+        *length = 1;
+        return true;
+    }
+    return false;
+}
+
+bool
+core_bridge_handle_key(CoreBridge *bridge, guint keyval, GdkModifierType state)
+{
+    if (!bridge || !iterm_pty_is_active(&bridge->pty)) {
+        return false;
+    }
+
+    const bool ctrl = (state & GDK_CONTROL_MASK) != 0;
+    const bool alt = (state & (GDK_ALT_MASK | GDK_MOD1_MASK)) != 0;
+    uint8_t buffer[8] = {0};
+    size_t length = 0;
+    const char *sequence = NULL;
+
+    if (ctrl && handle_control_combo(buffer, &length, keyval)) {
+        return send_bytes_with_alt(bridge, buffer, length, alt);
+    }
+
+    switch (keyval) {
+        case GDK_KEY_Return:
+        case GDK_KEY_KP_Enter:
+            buffer[0] = '\r';
+            length = 1;
+            break;
+        case GDK_KEY_BackSpace:
+            buffer[0] = 0x7F;
+            length = 1;
+            break;
+        case GDK_KEY_Tab:
+            buffer[0] = '\t';
+            length = 1;
+            break;
+        case GDK_KEY_ISO_Left_Tab:
+            sequence = "\x1b[Z";
+            break;
+        case GDK_KEY_Escape:
+            buffer[0] = 0x1B;
+            length = 1;
+            break;
+        case GDK_KEY_Up:
+        case GDK_KEY_KP_Up:
+            sequence = "\x1b[A";
+            break;
+        case GDK_KEY_Down:
+        case GDK_KEY_KP_Down:
+            sequence = "\x1b[B";
+            break;
+        case GDK_KEY_Right:
+        case GDK_KEY_KP_Right:
+            sequence = "\x1b[C";
+            break;
+        case GDK_KEY_Left:
+        case GDK_KEY_KP_Left:
+            sequence = "\x1b[D";
+            break;
+        case GDK_KEY_Home:
+        case GDK_KEY_KP_Home:
+            sequence = "\x1b[H";
+            break;
+        case GDK_KEY_End:
+        case GDK_KEY_KP_End:
+            sequence = "\x1b[F";
+            break;
+        case GDK_KEY_Delete:
+        case GDK_KEY_KP_Delete:
+            sequence = "\x1b[3~";
+            break;
+        case GDK_KEY_Insert:
+        case GDK_KEY_KP_Insert:
+            sequence = "\x1b[2~";
+            break;
+        case GDK_KEY_Page_Up:
+        case GDK_KEY_KP_Page_Up:
+            sequence = "\x1b[5~";
+            break;
+        case GDK_KEY_Page_Down:
+        case GDK_KEY_KP_Page_Down:
+            sequence = "\x1b[6~";
+            break;
+        default:
+            break;
+    }
+
+    if (!length && !sequence) {
+        gunichar ch = gdk_keyval_to_unicode(keyval);
+        if (ch != 0 && !ctrl) {
+            length = (size_t)g_unichar_to_utf8(ch, (char *)buffer);
+        }
+    }
+
+    if (sequence) {
+        return send_sequence(bridge, sequence, alt);
+    }
+    if (length) {
+        return send_bytes_with_alt(bridge, buffer, length, alt);
+    }
+    return false;
 }
 
