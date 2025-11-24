@@ -31,6 +31,68 @@ struct iterm_parser {
     iterm_screen *screen;
 };
 
+static int csi_param_value(const iterm_csi_param *param, int index, int fallback)
+{
+    if (!param || index < 0 || index >= param->count) {
+        return fallback;
+    }
+    int value = param->p[index];
+    return value == -1 ? fallback : value;
+}
+
+static bool apply_token_to_screen(iterm_parser *parser, const iterm_token *token)
+{
+    if (!parser || !parser->screen || !token) {
+        return false;
+    }
+    switch (token->type) {
+        case ITERM_TOKEN_CSI_CUU: {
+            int count = csi_param_value(&token->csi, 0, 1);
+            iterm_screen_move_cursor(parser->screen, -count, 0);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_CUD: {
+            int count = csi_param_value(&token->csi, 0, 1);
+            iterm_screen_move_cursor(parser->screen, count, 0);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_CUF: {
+            int count = csi_param_value(&token->csi, 0, 1);
+            iterm_screen_move_cursor(parser->screen, 0, count);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_CUB: {
+            int count = csi_param_value(&token->csi, 0, 1);
+            iterm_screen_move_cursor(parser->screen, 0, -count);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_CUP: {
+            int row = csi_param_value(&token->csi, 0, 1);
+            int col = csi_param_value(&token->csi, 1, 1);
+            size_t target_row = row > 0 ? (size_t)(row - 1) : 0;
+            size_t target_col = col > 0 ? (size_t)(col - 1) : 0;
+            iterm_screen_set_cursor(parser->screen, target_row, target_col);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_ED: {
+            int mode = csi_param_value(&token->csi, 0, 0);
+            iterm_screen_clear_screen(parser->screen, mode);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_EL: {
+            int mode = csi_param_value(&token->csi, 0, 0);
+            iterm_screen_clear_line(parser->screen, mode);
+            return true;
+        }
+        case ITERM_TOKEN_CSI_SGR:
+            iterm_screen_apply_sgr(parser->screen, &token->csi);
+            return true;
+        default:
+            return false;
+    }
+}
+
+
 static bool
 buffer_reserve(struct buffer *buffer, size_t extra)
 {
@@ -205,15 +267,11 @@ iterm_parser_feed(iterm_parser *parser,
                 need_more_data = true;
                 break;
             }
-            if (parser->screen && token.type == ITERM_TOKEN_ASCII && token.ascii.length > 0) {
-                char *temp = malloc(token.ascii.length + 1);
-                if (temp) {
-                    memcpy(temp, token.ascii.buffer, token.ascii.length);
-                    temp[token.ascii.length] = '\0';
-                    iterm_screen_put_text(parser->screen, temp);
-                    free(temp);
-                }
-            } else if (token.type != ITERM_TOKEN_NONE && token.type != ITERM_TOKEN_WAIT) {
+            bool consumed = false;
+            if (parser->screen) {
+                consumed = apply_token_to_screen(parser, &token);
+            }
+            if (!consumed && token.type != ITERM_TOKEN_NONE && token.type != ITERM_TOKEN_WAIT) {
                 callback(&token, user_data);
             }
             iterm_token_free(&token);

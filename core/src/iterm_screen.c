@@ -17,6 +17,7 @@ iterm_screen_init(iterm_screen *screen, size_t rows, size_t cols)
     screen->scrollback.data = NULL;
     screen->scrollback.length = 0;
     screen->scrollback.capacity = 0;
+    iterm_screen_reset_attributes(screen);
 }
 
 void
@@ -31,6 +32,7 @@ iterm_screen_set_size(iterm_screen *screen, size_t rows, size_t cols)
     screen->grid.cells = calloc(rows * cols, sizeof(iterm_cell));
     screen->cursor_row = 0;
     screen->cursor_col = 0;
+    iterm_screen_reset_attributes(screen);
 }
 
 void
@@ -55,6 +57,7 @@ iterm_screen_clear(iterm_screen *screen)
     memset(screen->grid.cells, 0, screen->grid.rows * screen->grid.cols * sizeof(iterm_cell));
     screen->cursor_row = 0;
     screen->cursor_col = 0;
+    iterm_screen_reset_attributes(screen);
 }
 
 void
@@ -95,9 +98,18 @@ iterm_screen_put_text(iterm_screen *screen, const char *text)
             continue;
         }
         iterm_cell *cell = &screen->grid.cells[screen->cursor_row * screen->grid.cols + screen->cursor_col];
+        uint8_t fg = screen->current_fg;
+        uint8_t bg = screen->current_bg;
+        uint16_t flags = screen->current_flags;
+        if (flags & ITERM_CELL_FLAG_INVERSE) {
+            uint8_t tmp = fg;
+            fg = bg;
+            bg = tmp;
+        }
         cell->codepoint = (uint8_t)*text;
-        cell->fg = 7;
-        cell->bg = 0;
+        cell->fg = fg;
+        cell->bg = bg;
+        cell->flags = (uint8_t)(flags & 0xFF);
         screen->cursor_col++;
         text++;
     }
@@ -168,6 +180,161 @@ iterm_screen_line_feed(iterm_screen *screen)
                0,
                row_size);
         screen->cursor_row = screen->grid.rows - 1;
+    }
+}
+
+static void clear_cells(iterm_screen *screen, size_t start, size_t count)
+{
+    if (!screen || !screen->grid.cells || count == 0) {
+        return;
+    }
+    size_t total = screen->grid.rows * screen->grid.cols;
+    if (start >= total) {
+        return;
+    }
+    if (start + count > total) {
+        count = total - start;
+    }
+    memset(screen->grid.cells + start, 0, count * sizeof(iterm_cell));
+}
+
+void iterm_screen_clear_line(iterm_screen *screen, int mode)
+{
+    if (!screen || !screen->grid.cells) {
+        return;
+    }
+    size_t row = screen->cursor_row;
+    if (row >= screen->grid.rows) {
+        row = screen->grid.rows ? screen->grid.rows - 1 : 0;
+    }
+    size_t cols = screen->grid.cols;
+    size_t from = 0;
+    size_t to = cols;
+    if (mode == 0) {
+        from = screen->cursor_col;
+    } else if (mode == 1) {
+        to = screen->cursor_col + 1;
+    } else {
+        from = 0;
+        to = cols;
+    }
+    if (from > cols) {
+        from = cols;
+    }
+    if (to > cols) {
+        to = cols;
+    }
+    if (from >= to) {
+        return;
+    }
+    size_t start = row * cols + from;
+    clear_cells(screen, start, to - from);
+}
+
+void iterm_screen_clear_screen(iterm_screen *screen, int mode)
+{
+    if (!screen || !screen->grid.cells) {
+        return;
+    }
+    size_t cols = screen->grid.cols;
+    size_t total = screen->grid.rows * cols;
+    size_t cursor = screen->cursor_row * cols + screen->cursor_col;
+    if (cursor > total) {
+        cursor = total;
+    }
+    size_t start = 0;
+    size_t count = total;
+    switch (mode) {
+        case 0:
+            start = cursor;
+            count = (cursor < total) ? total - cursor : 0;
+            break;
+        case 1:
+            start = 0;
+            count = cursor < total ? cursor + 1 : total;
+            break;
+        case 2:
+        default:
+            start = 0;
+            count = total;
+            screen->cursor_row = 0;
+            screen->cursor_col = 0;
+            break;
+    }
+    clear_cells(screen, start, count);
+}
+
+void iterm_screen_reset_attributes(iterm_screen *screen)
+{
+    if (!screen) {
+        return;
+    }
+    screen->current_fg = 7;
+    screen->current_bg = 0;
+    screen->current_flags = 0;
+}
+
+void iterm_screen_apply_sgr(iterm_screen *screen, const iterm_csi_param *param)
+{
+    if (!screen) {
+        return;
+    }
+    if (!param || param->count == 0) {
+        iterm_screen_reset_attributes(screen);
+        return;
+    }
+    for (int i = 0; i < param->count; ++i) {
+        int value = param->p[i];
+        if (value == -1) {
+            value = 0;
+        }
+        if (value >= 30 && value <= 37) {
+            screen->current_fg = (uint8_t)(value - 30);
+            continue;
+        }
+        if (value >= 40 && value <= 47) {
+            screen->current_bg = (uint8_t)(value - 40);
+            continue;
+        }
+        if (value >= 90 && value <= 97) {
+            screen->current_fg = (uint8_t)((value - 90) + 8);
+            continue;
+        }
+        if (value >= 100 && value <= 107) {
+            screen->current_bg = (uint8_t)((value - 100) + 8);
+            continue;
+        }
+        switch (value) {
+            case 0:
+                iterm_screen_reset_attributes(screen);
+                break;
+            case 1:
+                screen->current_flags |= ITERM_CELL_FLAG_BOLD;
+                break;
+            case 4:
+                screen->current_flags |= ITERM_CELL_FLAG_UNDERLINE;
+                break;
+            case 7:
+                screen->current_flags |= ITERM_CELL_FLAG_INVERSE;
+                break;
+            case 22:
+                screen->current_flags &= ~ITERM_CELL_FLAG_BOLD;
+                break;
+            case 24:
+                screen->current_flags &= ~ITERM_CELL_FLAG_UNDERLINE;
+                break;
+            case 27:
+                screen->current_flags &= ~ITERM_CELL_FLAG_INVERSE;
+                break;
+            case 39:
+                screen->current_fg = 7;
+                break;
+            case 49:
+                screen->current_bg = 0;
+                break;
+            default:
+                break;
+        }
     }
 }
 

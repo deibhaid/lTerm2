@@ -6,6 +6,7 @@
 #include "iterm_csi_param.h"
 #include "iterm_parser_context.h"
 #include "vt100_csi_parser.h"
+#include "iterm_token_types.h"
 
 static void
 reset_param(iterm_csi_param *param)
@@ -29,6 +30,23 @@ vt100_csi_parser_reset(vt100_csi_parser *parser)
         return;
     }
     reset_param(&parser->param);
+}
+
+static iterm_token_type map_csi_type(uint8_t final)
+{
+    switch (final) {
+        case 'A': return ITERM_TOKEN_CSI_CUU;
+        case 'B': return ITERM_TOKEN_CSI_CUD;
+        case 'C': return ITERM_TOKEN_CSI_CUF;
+        case 'D': return ITERM_TOKEN_CSI_CUB;
+        case 'H':
+        case 'f': return ITERM_TOKEN_CSI_CUP;
+        case 'J': return ITERM_TOKEN_CSI_ED;
+        case 'K': return ITERM_TOKEN_CSI_EL;
+        case 'm': return ITERM_TOKEN_CSI_SGR;
+        default:
+            return ITERM_TOKEN_CSI;
+    }
 }
 
 static bool
@@ -116,7 +134,7 @@ vt100_csi_parser_decode(vt100_csi_parser *parser,
     }
     iterm_parser_advance(context);
 
-    token->type = ITERM_TOKEN_CSI;
+    token->type = map_csi_type(final);
     token->code = final;
     token->csi = parser->param;
     token->csi.cmd = ITERM_PACKED_CSI(prefix, intermediate, final);
@@ -124,11 +142,4 @@ vt100_csi_parser_decode(vt100_csi_parser *parser,
     size_t consumed = (size_t)iterm_parser_bytes_consumed(context);
     return consumed;
 }
-#include "vt100_csi_parser.h"
-
-#include <stdbool.h>
-#include <string.h>
-
-#include "iterm_parser_context.h"
-#include "iterm_token.h"
 
