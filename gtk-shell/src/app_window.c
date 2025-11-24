@@ -73,7 +73,9 @@ iterm_app_window_new(GtkApplication *app)
                                          title_value,
                                          clipboard_value,
                                          tmux_value);
-    core_bridge_feed_demo(bridge);
+    if (!core_bridge_start_shell(bridge, NULL)) {
+        core_bridge_feed_demo(bridge);
+    }
     g_object_set_data_full(G_OBJECT(window), "core-bridge", bridge, (GDestroyNotify)core_bridge_free);
 
     return window;

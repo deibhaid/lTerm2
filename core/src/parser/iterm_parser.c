@@ -5,20 +5,13 @@
 #include <string.h>
 
 #include "iterm_reader.h"
+#include "iterm_screen.h"
 #include "vt100_control_parser.h"
 #include "vt100_csi_parser.h"
 #include "vt100_string_parser.h"
 #include "vt100_ansi_parser.h"
 #include "vt100_osc_parser.h"
 #include "vt100_dcs_parser.h"
-
-typedef enum {
-    STATE_GROUND,
-    STATE_ESCAPE,
-    STATE_CSI,
-    STATE_OSC,
-    STATE_DCS,
-} parser_state;
 
 struct buffer {
     uint8_t *data;
@@ -27,11 +20,7 @@ struct buffer {
 };
 
 struct iterm_parser {
-    parser_state state;
-    struct buffer seq_buffer;
     struct buffer ascii_buffer;
-    uint8_t control_byte;
-    bool osc_escape_pending;
     iterm_reader reader;
     vt100_control_parser control_parser;
     vt100_csi_parser csi_parser;
@@ -123,27 +112,6 @@ flush_ascii(iterm_parser *parser, iterm_parser_callback callback, void *user_dat
     buffer_reset(&parser->ascii_buffer);
 }
 
-static bool
-is_printable(uint8_t byte)
-{
-    if (byte >= 0x20 && byte <= 0x7E) {
-        return true;
-    }
-    if (byte >= 0xA0) {
-        return true;
-    }
-    return false;
-}
-
-static void
-reset_sequence(iterm_parser *parser, parser_state new_state)
-{
-    buffer_reset(&parser->seq_buffer);
-    parser->state = new_state;
-    parser->osc_escape_pending = false;
-    parser->string_token_type = ITERM_TOKEN_NONE;
-}
-
 iterm_parser *
 iterm_parser_new(iterm_screen *screen)
 {
@@ -151,7 +119,6 @@ iterm_parser_new(iterm_screen *screen)
     if (!parser) {
         return NULL;
     }
-    parser->state = STATE_GROUND;
     iterm_reader_init(&parser->reader);
     vt100_control_parser_init(&parser->control_parser);
     vt100_csi_parser_init(&parser->csi_parser);
@@ -169,7 +136,6 @@ iterm_parser_free(iterm_parser *parser)
     if (!parser) {
         return;
     }
-    free(parser->seq_buffer.data);
     free(parser->ascii_buffer.data);
     iterm_reader_free(&parser->reader);
     vt100_control_parser_reset(&parser->control_parser);
@@ -187,11 +153,7 @@ iterm_parser_reset(iterm_parser *parser)
     if (!parser) {
         return;
     }
-    buffer_reset(&parser->seq_buffer);
     buffer_reset(&parser->ascii_buffer);
-    parser->state = STATE_GROUND;
-    parser->osc_escape_pending = false;
-    parser->string_token_type = ITERM_TOKEN_NONE;
     iterm_reader_reset(&parser->reader);
     vt100_control_parser_reset(&parser->control_parser);
     vt100_csi_parser_reset(&parser->csi_parser);
@@ -217,83 +179,58 @@ iterm_parser_feed(iterm_parser *parser,
     size_t processed = 0;
     bool need_more_data = false;
     while (cursor.length > 0) {
-        if (parser->state == STATE_GROUND) {
-            uint8_t byte = cursor.data[0];
-            if (byte == 0x1B) {
-                flush_ascii(parser, callback, user_data);
-                reset_sequence(parser, STATE_ESCAPE);
-                buffer_append(&parser->seq_buffer, byte);
-                cursor.data++;
-                cursor.length--;
-                processed++;
-                continue;
-            }
-
-            if (byte < 0x20 || byte == 0x7F) {
-                flush_ascii(parser, callback, user_data);
-                iterm_token token;
-                iterm_token_init(&token);
-                size_t consumed = vt100_control_parser_parse(&parser->control_parser,
-                                                             &parser->csi_parser,
-                                                             &parser->string_parser,
-                                                             &parser->ansi_parser,
-                                                             &parser->osc_parser,
-                                                             &parser->dcs_parser,
-                                                             cursor.data,
-                                                             cursor.length,
-                                                             &token);
-                if (consumed == 0) {
-                    iterm_token_free(&token);
-                    need_more_data = true;
-                    break;
-                }
-        if (parser->screen && token.type == ITERM_TOKEN_ASCII && token.ascii.length > 0) {
-            char *temp = malloc(token.ascii.length + 1);
-            memcpy(temp, token.ascii.buffer, token.ascii.length);
-            temp[token.ascii.length] = '\0';
-            iterm_screen_put_text(parser->screen, temp);
-            free(temp);
-        } else if (token.type != ITERM_TOKEN_NONE && token.type != ITERM_TOKEN_WAIT) {
-            callback(&token, user_data);
+        uint8_t byte = cursor.data[0];
+        bool is_control = (byte < 0x20 || byte == 0x7F);
+        if (!is_control &&
+            parser->control_parser.support_8bit_controls &&
+            byte >= 0x80 && byte <= 0x9F) {
+            is_control = true;
         }
-                iterm_token_free(&token);
-                cursor.data += consumed;
-                cursor.length -= consumed;
-                processed += consumed;
-                continue;
-            }
 
-            buffer_append(&parser->ascii_buffer, byte);
-            cursor.data++;
-            cursor.length--;
-            processed++;
+        if (is_control) {
+            flush_ascii(parser, callback, user_data);
+            iterm_token token;
+            iterm_token_init(&token);
+            size_t consumed = vt100_control_parser_parse(&parser->control_parser,
+                                                         &parser->csi_parser,
+                                                         &parser->string_parser,
+                                                         &parser->ansi_parser,
+                                                         &parser->osc_parser,
+                                                         &parser->dcs_parser,
+                                                         cursor.data,
+                                                         cursor.length,
+                                                         &token);
+            if (consumed == 0) {
+                iterm_token_free(&token);
+                need_more_data = true;
+                break;
+            }
+            if (parser->screen && token.type == ITERM_TOKEN_ASCII && token.ascii.length > 0) {
+                char *temp = malloc(token.ascii.length + 1);
+                if (temp) {
+                    memcpy(temp, token.ascii.buffer, token.ascii.length);
+                    temp[token.ascii.length] = '\0';
+                    iterm_screen_put_text(parser->screen, temp);
+                    free(temp);
+                }
+            } else if (token.type != ITERM_TOKEN_NONE && token.type != ITERM_TOKEN_WAIT) {
+                callback(&token, user_data);
+            }
+            iterm_token_free(&token);
+            cursor.data += consumed;
+            cursor.length -= consumed;
+            processed += consumed;
             continue;
         }
 
-        uint8_t byte = cursor.data[0];
-        uint8_t byte = cursor.data[0];
-        switch (parser->state) {
-            case STATE_ESCAPE:
-                handle_escape(parser, byte, callback, user_data);
-                break;
-            case STATE_CSI:
-                handle_csi(parser, byte, callback, user_data);
-                break;
-            case STATE_OSC:
-            case STATE_DCS:
-                handle_string_state(parser, byte, callback, user_data);
-                break;
-            case STATE_GROUND:
-                // handled above
-                break;
-        }
+        buffer_append(&parser->ascii_buffer, byte);
         cursor.data++;
         cursor.length--;
         processed++;
     }
     iterm_reader_consume(&parser->reader, processed);
 
-    if (!need_more_data && parser->state == STATE_GROUND) {
+    if (!need_more_data) {
         flush_ascii(parser, callback, user_data);
     }
 }

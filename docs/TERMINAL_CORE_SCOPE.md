@@ -29,10 +29,10 @@ Goal: identify the Objective-C/C components that form iTerm2’s terminal engine
 5. **Keep UI-heavy classes out of the core** (`PTYTextView`, `PseudoTerminal`, `iTermController`). The GTK shell will reimplement their behavior using signals/actions while calling into the core.
 
 ### 4. Immediate Tasks
-1. **Parser bundle** *(in progress)*: bootstrap `core/parser/` with portable tokenizer (current placeholder) then incrementally migrate `VT100Terminal.*`, `VT100Parser.*`, `VT100CSIParser.*`, `VT100StateMachine.*`, `VT100Token.*` into the library as dependencies are abstracted.
-   - Next steps: define `iterm_token_repr` structs mirroring existing Objective-C models, port `VT100Parser` logic into `core/src/parser/vt100_*.c`, and expose a delegate-style API similar to `VT100TerminalDelegate`.
-2. **Screen bundle**: identify minimum types from `Screen.*`, `ScreenChar.*`, `VT100Grid.*`, `iTermCursor.*` to move next; document which AppKit APIs they call so we can plan abstractions.
-3. **Tracking**: log progress in `current_work.md` and add TODOs per bundle (e.g., “Parser extraction”, “Screen extraction”, “PTY process port”).
+1. **Parser bundle** *(complete for MVP)*: tokenizer/state machine/token structs are now in `core/src/parser`. Ongoing work is focused on coverage (full CSI/OSC/SGR semantics) rather than scaffolding.
+2. **Screen bundle** *(in progress)*: `iterm_screen` provides a basic grid/cursor/scrollback; next step is attribute handling, margins, and scroll regions pulled from `Screen.*`/`VT100Grid.*`.
+3. **PTY/process layer** *(new)*: `iterm_pty` wraps `openpty`/`fork` and powers the GTK shell’s login session. Upcoming work involves session management (pty lifecycle, resizing, flow control, send data API).
+4. **Tracking**: log progress in `current_work.md` and add TODOs per bundle (e.g., parser coverage, screen attributes, PTY lifecycle, tmux bridge).
 
 ### 5. References
 - Core entry points today: `PTYSession` owns `VT100Terminal`, `Screen`, `PTYTextView`, `PTYTask`.

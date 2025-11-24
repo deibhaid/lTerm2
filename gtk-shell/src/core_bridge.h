@@ -11,4 +11,5 @@ CoreBridge *core_bridge_new(GtkWindow *window,
                             GtkWidget *tmux_label);
 void core_bridge_free(CoreBridge *bridge);
 void core_bridge_feed_demo(CoreBridge *bridge);
+bool core_bridge_start_shell(CoreBridge *bridge, const char *shell_path);
 

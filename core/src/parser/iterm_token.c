@@ -2,6 +2,21 @@
 
 #include <string.h>
 
+static char *
+iterm_strdup(const char *input)
+{
+    if (!input) {
+        return NULL;
+    }
+    size_t len = strlen(input) + 1;
+    char *copy = malloc(len);
+    if (!copy) {
+        return NULL;
+    }
+    memcpy(copy, input, len);
+    return copy;
+}
+
 static void
 ascii_buffer_reset(iterm_ascii_buffer *ascii)
 {
@@ -171,10 +186,10 @@ iterm_token_set_kvp(iterm_token *token, const char *key, const char *value)
     token->kvp_key = NULL;
     token->kvp_value = NULL;
     if (key) {
-        token->kvp_key = strdup(key);
+        token->kvp_key = iterm_strdup(key);
     }
     if (value) {
-        token->kvp_value = strdup(value);
+        token->kvp_value = iterm_strdup(value);
     }
 }
 

@@ -52,16 +52,6 @@ should_emit_control(uint8_t byte, bool support8)
     return false;
 }
 
-static bool
-is_ansi_sequence(const uint8_t *data, size_t length)
-{
-    if (length < 2 || data[0] != ITERM_CC_ESC) {
-        return false;
-    }
-    uint8_t next = data[1];
-    return next == '(' || next == ')' || next == '*' || next == '+';
-}
-
 size_t
 vt100_control_parser_parse(vt100_control_parser *parser,
                            vt100_csi_parser *csi_parser,

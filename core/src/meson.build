@@ -2,6 +2,7 @@ core_includes = include_directories('..', '../include')
 
 sources = [
   'stub_terminal.c',
+  'iterm_pty.c',
   'parser/iterm_parser.c',
   'parser/iterm_state_machine.c',
   'parser/iterm_token.c',

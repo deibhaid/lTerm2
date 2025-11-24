@@ -1,5 +1,6 @@
 #include "vt100_string_parser.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 void

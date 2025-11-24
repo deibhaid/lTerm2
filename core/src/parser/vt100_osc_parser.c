@@ -5,6 +5,10 @@
 
 #include "iterm_token_types.h"
 
+#ifndef ARRAY_LENGTH
+#define ARRAY_LENGTH(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
+
 void
 vt100_osc_parser_init(vt100_osc_parser *parser)
 {
@@ -61,7 +65,7 @@ static const osc_mapping kOscMappings[] = {
 static const char *
 skip_code_prefix(const uint8_t *data, size_t length, iterm_token_type *out_type)
 {
-    for (size_t i = 0; i < G_N_ELEMENTS(kOscMappings); ++i) {
+    for (size_t i = 0; i < ARRAY_LENGTH(kOscMappings); ++i) {
         size_t prefix_len = strlen(kOscMappings[i].prefix);
         if (length > prefix_len && memcmp(data, kOscMappings[i].prefix, prefix_len) == 0 && data[prefix_len] == ';') {
             if (out_type) {

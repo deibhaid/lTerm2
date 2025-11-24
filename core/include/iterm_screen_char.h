@@ -8,6 +8,10 @@
 extern "C" {
 #endif
 
+#ifndef ITERM_ASCII_STATIC
+#define ITERM_ASCII_STATIC 128
+#endif
+
 typedef struct {
     uint32_t code;
     uint8_t complex;

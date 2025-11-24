@@ -11,8 +11,6 @@
 extern "C" {
 #endif
 
-#define ITERM_ASCII_STATIC 128
-
 #define ITERM_TOKEN_STATIC_SCREEN_CHARS 128
 
 typedef struct {
@@ -20,6 +18,8 @@ typedef struct {
     size_t length;
     uint8_t static_buffer[ITERM_ASCII_STATIC];
 } iterm_ascii_buffer;
+
+struct iterm_token;
 
 typedef struct iterm_token_subtoken {
     struct iterm_token_subtoken *next;

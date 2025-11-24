@@ -4,13 +4,13 @@
 #include <stdint.h>
 
 #include "iterm_token.h"
+#include "iterm_screen.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct iterm_parser iterm_parser;
-
 iterm_parser *iterm_parser_new(iterm_screen *screen);
 void iterm_parser_free(iterm_parser *parser);
 void iterm_parser_reset(iterm_parser *parser);

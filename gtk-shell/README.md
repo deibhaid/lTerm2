@@ -14,10 +14,10 @@ meson compile -C builddir
 ./builddir/src/iterm2-gtk
 ```
 
-The current window is a placeholder with stub containers for the future tab strip, status bar, and terminal view.
+The current window spawns your login shell inside a PTY, feeds it through `libiterm-core`, and renders the screen grid via a Cairo/Pango drawing area. The tab/status widgets are still placeholders.
 
 ## Next Steps
-- Wire up libiterm-core once the portable terminal library is ready.
+- Expand libiterm-core coverage (full CSI/OSC/SGR handling, scrollback operations).
 - Flesh out widgets: tab manager, split pane controller, profile selector, status bar.
 - Integrate DBus automation and Linux platform services (notifications, keyring, hotkeys).
 

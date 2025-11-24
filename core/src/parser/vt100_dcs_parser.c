@@ -1,5 +1,6 @@
 #include "vt100_dcs_parser.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "iterm_token_types.h"

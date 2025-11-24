@@ -1,6 +1,11 @@
 #include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "iterm_csi_param.h"
+#include "iterm_parser_context.h"
+#include "vt100_csi_parser.h"
 
 static void
 reset_param(iterm_csi_param *param)
