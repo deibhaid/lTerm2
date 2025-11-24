@@ -7,7 +7,11 @@ typedef struct {
     GtkWidget *area;
     GString *buffer;
     PangoFontDescription *font;
-    const lterm_screen *screen;
+    lterm_screen *screen;
+    terminal_view_resize_cb resize_cb;
+    void *resize_data;
+    size_t cached_cols;
+    size_t cached_rows;
 } TerminalView;
 
 static void
@@ -115,55 +119,82 @@ terminal_view_draw(GtkDrawingArea *area,
         }
         const double padding_x = 6.0;
         const double padding_y = 6.0;
+        int usable_width = width - (int)(padding_x * 2);
+        int usable_height = height - (int)(padding_y * 2);
+        if (usable_width < char_width) {
+            usable_width = char_width;
+        }
+        if (usable_height < char_height) {
+            usable_height = char_height;
+        }
+        size_t cols_fit = (size_t)((usable_width + char_width - 1) / char_width);
+        size_t rows_fit = (size_t)((usable_height + char_height - 1) / char_height);
+        if (cols_fit == 0) {
+            cols_fit = 1;
+        }
+        if (rows_fit == 0) {
+            rows_fit = 1;
+        }
+        if (view->resize_cb &&
+            (cols_fit != view->cached_cols || rows_fit != view->cached_rows)) {
+            view->cached_cols = cols_fit;
+            view->cached_rows = rows_fit;
+            view->resize_cb(cols_fit, rows_fit, view->resize_data);
+        }
+        const lterm_screen *screen = view->screen;
+        if (screen && screen->grid.cells) {
+            size_t rows = screen->grid.rows;
+            size_t cols = screen->grid.cols;
+            for (size_t row = 0; row < rows; ++row) {
+                for (size_t col = 0; col < cols; ++col) {
+                    const lterm_cell cell = screen->grid.cells[row * cols + col];
+                    double fg_r = 0.8, fg_g = 0.8, fg_b = 0.8;
+                    double bg_r = 0.07, bg_g = 0.07, bg_b = 0.07;
+                    color_from_index(cell.fg, &fg_r, &fg_g, &fg_b);
+                    color_from_index(cell.bg, &bg_r, &bg_g, &bg_b);
 
-        for (size_t row = 0; row < view->screen->grid.rows; ++row) {
-            for (size_t col = 0; col < view->screen->grid.cols; ++col) {
-                const lterm_cell cell = view->screen->grid.cells[row * view->screen->grid.cols + col];
-                double fg_r = 0.8, fg_g = 0.8, fg_b = 0.8;
-                double bg_r = 0.07, bg_g = 0.07, bg_b = 0.07;
-                color_from_index(cell.fg, &fg_r, &fg_g, &fg_b);
-                color_from_index(cell.bg, &bg_r, &bg_g, &bg_b);
+                    const double x = padding_x + (double)col * char_width;
+                    const double y = padding_y + (double)row * char_height;
+                    cairo_save(cr);
+                    cairo_rectangle(cr, x, y, char_width, char_height);
+                    cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
+                    cairo_fill(cr);
+                    cairo_restore(cr);
 
-                const double x = padding_x + (double)col * char_width;
-                const double y = padding_y + (double)row * char_height;
-                cairo_save(cr);
-                cairo_rectangle(cr, x, y, char_width, char_height);
-                cairo_set_source_rgb(cr, bg_r, bg_g, bg_b);
-                cairo_fill(cr);
-                cairo_restore(cr);
+                    gunichar ch = cell.codepoint ? cell.codepoint : ' ';
+                    char utf8[8];
+                    gint len = g_unichar_to_utf8(ch, utf8);
+                    utf8[len] = '\0';
+                    pango_layout_set_text(layout, utf8, -1);
 
-                gunichar ch = cell.codepoint ? cell.codepoint : ' ';
-                char utf8[8];
-                gint len = g_unichar_to_utf8(ch, utf8);
-                utf8[len] = '\0';
-                pango_layout_set_text(layout, utf8, -1);
-
-                PangoAttrList *attrs = NULL;
-                if ((cell.flags & LTERM_CELL_FLAG_BOLD) || (cell.flags & LTERM_CELL_FLAG_UNDERLINE)) {
-                    attrs = pango_attr_list_new();
-                    if (cell.flags & LTERM_CELL_FLAG_BOLD) {
-                        PangoAttribute *weight = pango_attr_weight_new(PANGO_WEIGHT_BOLD);
-                        weight->start_index = 0;
-                        weight->end_index = G_MAXUINT;
-                        pango_attr_list_insert(attrs, weight);
+                    PangoAttrList *attrs = NULL;
+                    if ((cell.flags & LTERM_CELL_FLAG_BOLD) ||
+                        (cell.flags & LTERM_CELL_FLAG_UNDERLINE)) {
+                        attrs = pango_attr_list_new();
+                        if (cell.flags & LTERM_CELL_FLAG_BOLD) {
+                            PangoAttribute *weight = pango_attr_weight_new(PANGO_WEIGHT_BOLD);
+                            weight->start_index = 0;
+                            weight->end_index = G_MAXUINT;
+                            pango_attr_list_insert(attrs, weight);
+                        }
+                        if (cell.flags & LTERM_CELL_FLAG_UNDERLINE) {
+                            PangoAttribute *underline = pango_attr_underline_new(PANGO_UNDERLINE_SINGLE);
+                            underline->start_index = 0;
+                            underline->end_index = G_MAXUINT;
+                            pango_attr_list_insert(attrs, underline);
+                        }
+                        pango_layout_set_attributes(layout, attrs);
+                    } else {
+                        pango_layout_set_attributes(layout, NULL);
                     }
-                    if (cell.flags & LTERM_CELL_FLAG_UNDERLINE) {
-                        PangoAttribute *underline = pango_attr_underline_new(PANGO_UNDERLINE_SINGLE);
-                        underline->start_index = 0;
-                        underline->end_index = G_MAXUINT;
-                        pango_attr_list_insert(attrs, underline);
+
+                    cairo_set_source_rgb(cr, fg_r, fg_g, fg_b);
+                    cairo_move_to(cr, x, y);
+                    pango_cairo_show_layout(cr, layout);
+
+                    if (attrs) {
+                        pango_attr_list_unref(attrs);
                     }
-                    pango_layout_set_attributes(layout, attrs);
-                } else {
-                    pango_layout_set_attributes(layout, NULL);
-                }
-
-                cairo_set_source_rgb(cr, fg_r, fg_g, fg_b);
-                cairo_move_to(cr, x, y);
-                pango_cairo_show_layout(cr, layout);
-
-                if (attrs) {
-                    pango_attr_list_unref(attrs);
                 }
             }
         }
@@ -226,13 +257,33 @@ terminal_view_append_text(GtkWidget *widget, const char *text)
 }
 
 void
-terminal_view_set_screen(GtkWidget *widget, const lterm_screen *screen)
+terminal_view_set_screen(GtkWidget *widget, lterm_screen *screen)
 {
     TerminalView *view = g_object_get_data(G_OBJECT(widget), "terminal-view");
     if (!view) {
         return;
     }
     view->screen = screen;
+    if (screen) {
+        view->cached_cols = screen->grid.cols;
+        view->cached_rows = screen->grid.rows;
+    } else {
+        view->cached_cols = 0;
+        view->cached_rows = 0;
+    }
     gtk_widget_queue_draw(widget);
+}
+
+void
+terminal_view_set_resize_callback(GtkWidget *widget,
+                                  terminal_view_resize_cb callback,
+                                  void *user_data)
+{
+    TerminalView *view = g_object_get_data(G_OBJECT(widget), "terminal-view");
+    if (!view) {
+        return;
+    }
+    view->resize_cb = callback;
+    view->resize_data = user_data;
 }
 

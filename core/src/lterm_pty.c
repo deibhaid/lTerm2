@@ -204,4 +204,25 @@ lterm_pty_close(lterm_pty *pty)
     }
 }
 
+bool
+lterm_pty_resize(lterm_pty *pty, size_t rows, size_t cols)
+{
+    if (!pty || pty->master_fd < 0) {
+        return false;
+    }
+    struct winsize ws = {
+        .ws_row = rows > 0 ? (unsigned short)rows : 1,
+        .ws_col = cols > 0 ? (unsigned short)cols : 1,
+        .ws_xpixel = 0,
+        .ws_ypixel = 0,
+    };
+    if (ioctl(pty->master_fd, TIOCSWINSZ, &ws) != 0) {
+        return false;
+    }
+    if (pty->child_pid > 0) {
+        kill(pty->child_pid, SIGWINCH);
+    }
+    return true;
+}
+
 

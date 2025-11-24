@@ -132,13 +132,38 @@ lterm_screen_set_size(lterm_screen *screen, size_t rows, size_t cols)
     if (!screen) {
         return;
     }
-    free(screen->grid.cells);
+    if (rows == 0) {
+        rows = 1;
+    }
+    if (cols == 0) {
+        cols = 1;
+    }
+    if (rows == screen->grid.rows && cols == screen->grid.cols) {
+        return;
+    }
+    lterm_cell *new_cells = calloc(rows * cols, sizeof(lterm_cell));
+    if (!new_cells) {
+        return;
+    }
+    if (screen->grid.cells) {
+        size_t copy_rows = screen->grid.rows < rows ? screen->grid.rows : rows;
+        size_t copy_cols = screen->grid.cols < cols ? screen->grid.cols : cols;
+        for (size_t r = 0; r < copy_rows; ++r) {
+            memcpy(new_cells + r * cols,
+                   screen->grid.cells + r * screen->grid.cols,
+                   copy_cols * sizeof(lterm_cell));
+        }
+        free(screen->grid.cells);
+    }
+    screen->grid.cells = new_cells;
     screen->grid.rows = rows;
     screen->grid.cols = cols;
-    screen->grid.cells = calloc(rows * cols, sizeof(lterm_cell));
-    screen->cursor_row = 0;
-    screen->cursor_col = 0;
-    lterm_screen_reset_attributes(screen);
+    if (screen->cursor_row >= rows) {
+        screen->cursor_row = rows - 1;
+    }
+    if (screen->cursor_col >= cols) {
+        screen->cursor_col = cols - 1;
+    }
 }
 
 void

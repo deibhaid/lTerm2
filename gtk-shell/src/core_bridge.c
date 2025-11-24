@@ -29,6 +29,7 @@ struct _CoreBridge {
 };
 
 static void parser_callback(const lterm_token *token, void *user_data);
+static void terminal_view_handle_resize(size_t cols, size_t rows, void *user_data);
 
 static bool
 pty_write_all(CoreBridge *bridge, const uint8_t *data, size_t length)
@@ -76,6 +77,29 @@ attach_screen(CoreBridge *bridge)
     }
     gtk_widget_queue_draw(bridge->terminal_view);
 }
+
+static void
+terminal_view_handle_resize(size_t cols, size_t rows, void *user_data)
+{
+    CoreBridge *bridge = user_data;
+    if (!bridge) {
+        return;
+    }
+    if (cols == 0) {
+        cols = 1;
+    }
+    if (rows == 0) {
+        rows = 1;
+    }
+    lterm_screen_set_size(&bridge->screen, rows, cols);
+    if (lterm_pty_is_active(&bridge->pty)) {
+        lterm_pty_resize(&bridge->pty, rows, cols);
+    }
+    if (bridge->terminal_view) {
+        gtk_widget_queue_draw(bridge->terminal_view);
+    }
+}
+
 
 static void
 stop_pty(CoreBridge *bridge)
@@ -272,6 +296,7 @@ core_bridge_new(GtkWindow *window,
     bridge->parser = lterm_parser_new(&bridge->screen);
     bridge->window = window;
     bridge->terminal_view = terminal_view;
+    terminal_view_set_resize_callback(terminal_view, terminal_view_handle_resize, bridge);
     bridge->title_label = title_label;
     bridge->clipboard_label = clipboard_label;
     bridge->tmux_label = tmux_label;
