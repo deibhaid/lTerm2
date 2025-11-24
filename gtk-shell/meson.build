@@ -12,11 +12,10 @@ cc = meson.get_compiler('c')
 gtkdep = dependency('gtk4', required : true)
 
 core_source_root = meson.project_source_root()
-core_include_dir = join_paths(core_source_root, '..', 'core', 'include')
 core_build_dir = join_paths(core_source_root, '..', 'core', 'builddir')
 core_build_src = join_paths(core_build_dir, 'src')
 
-core_inc = include_directories(core_include_dir)
+core_inc = include_directories('../core/include')
 corelib = cc.find_library('iterm_core',
   dirs : [core_build_src, core_build_dir],
   required : true)
