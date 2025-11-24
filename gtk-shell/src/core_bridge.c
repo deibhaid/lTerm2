@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
 #include "iterm_screen.h"
@@ -360,7 +361,7 @@ core_bridge_handle_key(CoreBridge *bridge, guint keyval, GdkModifierType state)
     }
 
     const bool ctrl = (state & GDK_CONTROL_MASK) != 0;
-    const bool alt = (state & (GDK_ALT_MASK | GDK_MOD1_MASK)) != 0;
+    const bool alt = (state & GDK_ALT_MASK) != 0;
     uint8_t buffer[8] = {0};
     size_t length = 0;
     const char *sequence = NULL;

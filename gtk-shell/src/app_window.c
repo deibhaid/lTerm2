@@ -25,7 +25,6 @@ static GtkWidget *
 create_placeholder(const char *title, GtkWidget **label_out)
 {
     GtkWidget *frame = gtk_frame_new(NULL);
-    gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_ETCHED_IN);
 
     GtkWidget *label = gtk_label_new(title);
     gtk_widget_add_css_class(label, "dim-label");
@@ -44,7 +43,9 @@ iterm_app_window_new(GtkApplication *app)
     gtk_window_set_title(GTK_WINDOW(window), "iTerm2 GTK Preview");
 
     GtkWidget *header = gtk_header_bar_new();
-    gtk_header_bar_set_title(GTK_HEADER_BAR(header), "iTerm2 GTK");
+    GtkWidget *header_title = gtk_label_new("iTerm2 GTK");
+    gtk_widget_add_css_class(header_title, "title");
+    gtk_header_bar_set_title_widget(GTK_HEADER_BAR(header), header_title);
     gtk_window_set_titlebar(GTK_WINDOW(window), header);
 
     GtkWidget *content = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
