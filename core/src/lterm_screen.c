@@ -2,6 +2,112 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+static void ensure_scrollback_capacity(lterm_screen *screen, size_t additional_cells);
+static void scroll_up(lterm_screen *screen);
+static void ensure_cursor_row(lterm_screen *screen);
+static void write_codepoint(lterm_screen *screen, uint32_t codepoint);
+
+static void ensure_scrollback_capacity(lterm_screen *screen, size_t additional_cells)
+{
+    if (!screen) {
+        return;
+    }
+    size_t needed = screen->scrollback.length + additional_cells;
+    if (needed <= screen->scrollback.capacity) {
+        return;
+    }
+    size_t cols = screen->grid.cols ? screen->grid.cols : 1;
+    size_t new_capacity = screen->scrollback.capacity ? screen->scrollback.capacity : cols * 32;
+    while (new_capacity < needed) {
+        new_capacity *= 2;
+    }
+    lterm_cell *new_data = realloc(screen->scrollback.data, new_capacity * sizeof(lterm_cell));
+    if (!new_data) {
+        return;
+    }
+    screen->scrollback.data = new_data;
+    screen->scrollback.capacity = new_capacity;
+}
+
+static void scroll_up(lterm_screen *screen)
+{
+    if (!screen || !screen->grid.cells || screen->grid.rows == 0 || screen->grid.cols == 0) {
+        return;
+    }
+    size_t cols = screen->grid.cols;
+    size_t row_size = cols * sizeof(lterm_cell);
+    ensure_scrollback_capacity(screen, cols);
+    if (screen->scrollback.data && screen->scrollback.length + cols <= screen->scrollback.capacity) {
+        memcpy(screen->scrollback.data + screen->scrollback.length,
+               screen->grid.cells,
+               row_size);
+        screen->scrollback.length += cols;
+    }
+    if (screen->grid.rows > 1) {
+        memmove(screen->grid.cells,
+                screen->grid.cells + cols,
+                (screen->grid.rows - 1) * row_size);
+    }
+    memset(screen->grid.cells + (screen->grid.rows - 1) * cols, 0, row_size);
+}
+
+static void ensure_cursor_row(lterm_screen *screen)
+{
+    if (!screen || !screen->grid.cells || screen->grid.rows == 0) {
+        screen->cursor_row = 0;
+        return;
+    }
+    while (screen->cursor_row >= screen->grid.rows) {
+        scroll_up(screen);
+        if (screen->grid.rows == 0) {
+            break;
+        }
+        if (screen->cursor_row > 0) {
+            screen->cursor_row--;
+        } else {
+            break;
+        }
+    }
+    if (screen->cursor_row >= screen->grid.rows) {
+        screen->cursor_row = screen->grid.rows - 1;
+    }
+}
+
+static void write_codepoint(lterm_screen *screen, uint32_t codepoint)
+{
+    if (!screen || !screen->grid.cells || screen->grid.cols == 0) {
+        return;
+    }
+    if (screen->cursor_col >= screen->grid.cols) {
+        screen->cursor_col = 0;
+        screen->cursor_row++;
+    }
+    ensure_cursor_row(screen);
+    if (!screen->grid.cells) {
+        return;
+    }
+    size_t index = screen->cursor_row * screen->grid.cols + screen->cursor_col;
+    uint8_t fg = screen->current_fg;
+    uint8_t bg = screen->current_bg;
+    uint16_t flags = screen->current_flags;
+    if (flags & LTERM_CELL_FLAG_INVERSE) {
+        uint8_t tmp = fg;
+        fg = bg;
+        bg = tmp;
+    }
+    lterm_cell *cell = &screen->grid.cells[index];
+    cell->codepoint = codepoint ? codepoint : ' ';
+    cell->fg = fg;
+    cell->bg = bg;
+    cell->flags = (uint8_t)(flags & 0xFF);
+    screen->cursor_col++;
+    if (screen->cursor_col >= screen->grid.cols) {
+        screen->cursor_col = 0;
+        screen->cursor_row++;
+    }
+}
 
 void
 lterm_screen_init(lterm_screen *screen, size_t rows, size_t cols)
@@ -67,51 +173,37 @@ lterm_screen_put_text(lterm_screen *screen, const char *text)
         return;
     }
     while (*text) {
-        if (*text == '\n') {
-            screen->cursor_row++;
-            screen->cursor_col = 0;
-            text++;
-            continue;
-        }
-        if (screen->cursor_row >= screen->grid.rows) {
-            size_t row_size = screen->grid.cols * sizeof(lterm_cell);
-            if (screen->scrollback.length + screen->grid.cols > screen->scrollback.capacity) {
-                size_t new_capacity = screen->scrollback.capacity ? screen->scrollback.capacity * 2 : screen->grid.cols * 32;
-                screen->scrollback.data = realloc(screen->scrollback.data, new_capacity * sizeof(lterm_cell));
-                screen->scrollback.capacity = new_capacity;
+        unsigned char ch = (unsigned char)*text++;
+        switch (ch) {
+            case '\r':
+                screen->cursor_col = 0;
+                break;
+            case '\n':
+                lterm_screen_line_feed(screen);
+                screen->cursor_col = 0;
+                break;
+            case '\t': {
+                if (screen->grid.cols == 0) {
+                    break;
+                }
+                const size_t tab = 8;
+                size_t offset = screen->cursor_col % tab;
+                size_t advance = tab - offset;
+                if (advance == 0) {
+                    advance = tab;
+                }
+                for (size_t i = 0; i < advance; ++i) {
+                    write_codepoint(screen, ' ');
+                }
+                break;
             }
-            memcpy(screen->scrollback.data + screen->scrollback.length,
-                   screen->grid.cells,
-                   row_size);
-            screen->scrollback.length += screen->grid.cols;
-            memmove(screen->grid.cells,
-                    screen->grid.cells + screen->grid.cols,
-                    (screen->grid.rows - 1) * row_size);
-            memset(screen->grid.cells + (screen->grid.rows - 1) * screen->grid.cols,
-                   0,
-                   row_size);
-            screen->cursor_row = screen->grid.rows - 1;
+            default:
+                if (ch < 0x20 && ch != 0x1B) {
+                    break;
+                }
+                write_codepoint(screen, ch);
+                break;
         }
-        if (screen->cursor_col >= screen->grid.cols) {
-            screen->cursor_row++;
-            screen->cursor_col = 0;
-            continue;
-        }
-        lterm_cell *cell = &screen->grid.cells[screen->cursor_row * screen->grid.cols + screen->cursor_col];
-        uint8_t fg = screen->current_fg;
-        uint8_t bg = screen->current_bg;
-        uint16_t flags = screen->current_flags;
-        if (flags & LTERM_CELL_FLAG_INVERSE) {
-            uint8_t tmp = fg;
-            fg = bg;
-            bg = tmp;
-        }
-        cell->codepoint = (uint8_t)*text;
-        cell->fg = fg;
-        cell->bg = bg;
-        cell->flags = (uint8_t)(flags & 0xFF);
-        screen->cursor_col++;
-        text++;
     }
 }
 
@@ -172,14 +264,12 @@ lterm_screen_line_feed(lterm_screen *screen)
     }
     screen->cursor_row++;
     if (screen->cursor_row >= screen->grid.rows) {
-        size_t row_size = screen->grid.cols * sizeof(lterm_cell);
-        memmove(screen->grid.cells,
-                screen->grid.cells + screen->grid.cols,
-                (screen->grid.rows - 1) * row_size);
-        memset(screen->grid.cells + (screen->grid.rows - 1) * screen->grid.cols,
-               0,
-               row_size);
-        screen->cursor_row = screen->grid.rows - 1;
+        scroll_up(screen);
+        if (screen->grid.rows > 0) {
+            screen->cursor_row = screen->grid.rows - 1;
+        } else {
+            screen->cursor_row = 0;
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 #include "app_window.h"
 #include "core_bridge.h"
-#include <glib.h>
 #include "terminal_view.h"
 
 static gboolean
@@ -16,7 +15,6 @@ terminal_key_pressed(GtkEventControllerKey *controller,
     if (!bridge) {
         return GDK_EVENT_PROPAGATE;
     }
-    g_print("key pressed: %u state=0x%x\n", keyval, state);
     if (core_bridge_handle_key(bridge, keyval, state)) {
         return GDK_EVENT_STOP;
     }
