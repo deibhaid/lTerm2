@@ -19,12 +19,7 @@ typedef struct {
     uint8_t static_buffer[ITERM_ASCII_STATIC];
 } iterm_ascii_buffer;
 
-struct iterm_token;
-
-typedef struct iterm_token_subtoken {
-    struct iterm_token_subtoken *next;
-    struct iterm_token token;
-} iterm_token_subtoken;
+typedef struct iterm_token_subtoken iterm_token_subtoken;
 
 typedef struct iterm_token {
     iterm_token_type type;
@@ -39,6 +34,11 @@ typedef struct iterm_token {
     char *kvp_value;
     int crlf_count;
 } iterm_token;
+
+struct iterm_token_subtoken {
+    iterm_token_subtoken *next;
+    iterm_token token;
+};
 
 void iterm_token_init(iterm_token *token);
 void iterm_token_reset(iterm_token *token);
