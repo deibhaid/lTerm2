@@ -8,8 +8,8 @@
 extern "C" {
 #endif
 
-#ifndef ITERM_ASCII_STATIC
-#define ITERM_ASCII_STATIC 128
+#ifndef LTERM_ASCII_STATIC
+#define LTERM_ASCII_STATIC 128
 #endif
 
 typedef struct {
@@ -26,17 +26,17 @@ typedef struct {
     uint8_t invisible;
     uint8_t strikethrough;
     uint8_t image;
-} iterm_screen_char;
+} lterm_screen_char;
 
 typedef struct {
-    iterm_screen_char *buffer;
+    lterm_screen_char *buffer;
     size_t length;
     size_t capacity;
-    iterm_screen_char static_buffer[ITERM_ASCII_STATIC];
-} iterm_screen_char_array;
+    lterm_screen_char static_buffer[LTERM_ASCII_STATIC];
+} lterm_screen_char_array;
 
 static inline void
-iterm_screen_char_array_init(iterm_screen_char_array *array)
+lterm_screen_char_array_init(lterm_screen_char_array *array)
 {
     if (!array) {
         return;
@@ -48,7 +48,7 @@ iterm_screen_char_array_init(iterm_screen_char_array *array)
 }
 
 static inline void
-iterm_screen_char_array_reset(iterm_screen_char_array *array)
+lterm_screen_char_array_reset(lterm_screen_char_array *array)
 {
     if (!array) {
         return;
@@ -63,18 +63,18 @@ iterm_screen_char_array_reset(iterm_screen_char_array *array)
 }
 
 static inline void
-iterm_screen_char_array_append(iterm_screen_char_array *array, const iterm_screen_char *ch)
+lterm_screen_char_array_append(lterm_screen_char_array *array, const lterm_screen_char *ch)
 {
     if (!array || !ch) {
         return;
     }
     if (array->length == array->capacity) {
         size_t new_capacity = array->capacity * 2;
-        iterm_screen_char *new_buffer = malloc(new_capacity * sizeof(iterm_screen_char));
+        lterm_screen_char *new_buffer = malloc(new_capacity * sizeof(lterm_screen_char));
         if (!new_buffer) {
             return;
         }
-        memcpy(new_buffer, array->buffer, array->length * sizeof(iterm_screen_char));
+        memcpy(new_buffer, array->buffer, array->length * sizeof(lterm_screen_char));
         if (array->buffer != array->static_buffer) {
             free(array->buffer);
         }

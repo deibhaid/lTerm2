@@ -1,27 +1,27 @@
-#include "iterm_screen.h"
+#include "lterm_screen.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 void
-iterm_screen_init(iterm_screen *screen, size_t rows, size_t cols)
+lterm_screen_init(lterm_screen *screen, size_t rows, size_t cols)
 {
     if (!screen) {
         return;
     }
     screen->grid.rows = rows;
     screen->grid.cols = cols;
-    screen->grid.cells = calloc(rows * cols, sizeof(iterm_cell));
+    screen->grid.cells = calloc(rows * cols, sizeof(lterm_cell));
     screen->cursor_row = 0;
     screen->cursor_col = 0;
     screen->scrollback.data = NULL;
     screen->scrollback.length = 0;
     screen->scrollback.capacity = 0;
-    iterm_screen_reset_attributes(screen);
+    lterm_screen_reset_attributes(screen);
 }
 
 void
-iterm_screen_set_size(iterm_screen *screen, size_t rows, size_t cols)
+lterm_screen_set_size(lterm_screen *screen, size_t rows, size_t cols)
 {
     if (!screen) {
         return;
@@ -29,14 +29,14 @@ iterm_screen_set_size(iterm_screen *screen, size_t rows, size_t cols)
     free(screen->grid.cells);
     screen->grid.rows = rows;
     screen->grid.cols = cols;
-    screen->grid.cells = calloc(rows * cols, sizeof(iterm_cell));
+    screen->grid.cells = calloc(rows * cols, sizeof(lterm_cell));
     screen->cursor_row = 0;
     screen->cursor_col = 0;
-    iterm_screen_reset_attributes(screen);
+    lterm_screen_reset_attributes(screen);
 }
 
 void
-iterm_screen_free(iterm_screen *screen)
+lterm_screen_free(lterm_screen *screen)
 {
     if (!screen) {
         return;
@@ -49,19 +49,19 @@ iterm_screen_free(iterm_screen *screen)
 }
 
 void
-iterm_screen_clear(iterm_screen *screen)
+lterm_screen_clear(lterm_screen *screen)
 {
     if (!screen || !screen->grid.cells) {
         return;
     }
-    memset(screen->grid.cells, 0, screen->grid.rows * screen->grid.cols * sizeof(iterm_cell));
+    memset(screen->grid.cells, 0, screen->grid.rows * screen->grid.cols * sizeof(lterm_cell));
     screen->cursor_row = 0;
     screen->cursor_col = 0;
-    iterm_screen_reset_attributes(screen);
+    lterm_screen_reset_attributes(screen);
 }
 
 void
-iterm_screen_put_text(iterm_screen *screen, const char *text)
+lterm_screen_put_text(lterm_screen *screen, const char *text)
 {
     if (!screen || !screen->grid.cells || !text) {
         return;
@@ -74,10 +74,10 @@ iterm_screen_put_text(iterm_screen *screen, const char *text)
             continue;
         }
         if (screen->cursor_row >= screen->grid.rows) {
-            size_t row_size = screen->grid.cols * sizeof(iterm_cell);
+            size_t row_size = screen->grid.cols * sizeof(lterm_cell);
             if (screen->scrollback.length + screen->grid.cols > screen->scrollback.capacity) {
                 size_t new_capacity = screen->scrollback.capacity ? screen->scrollback.capacity * 2 : screen->grid.cols * 32;
-                screen->scrollback.data = realloc(screen->scrollback.data, new_capacity * sizeof(iterm_cell));
+                screen->scrollback.data = realloc(screen->scrollback.data, new_capacity * sizeof(lterm_cell));
                 screen->scrollback.capacity = new_capacity;
             }
             memcpy(screen->scrollback.data + screen->scrollback.length,
@@ -97,11 +97,11 @@ iterm_screen_put_text(iterm_screen *screen, const char *text)
             screen->cursor_col = 0;
             continue;
         }
-        iterm_cell *cell = &screen->grid.cells[screen->cursor_row * screen->grid.cols + screen->cursor_col];
+        lterm_cell *cell = &screen->grid.cells[screen->cursor_row * screen->grid.cols + screen->cursor_col];
         uint8_t fg = screen->current_fg;
         uint8_t bg = screen->current_bg;
         uint16_t flags = screen->current_flags;
-        if (flags & ITERM_CELL_FLAG_INVERSE) {
+        if (flags & LTERM_CELL_FLAG_INVERSE) {
             uint8_t tmp = fg;
             fg = bg;
             bg = tmp;
@@ -116,7 +116,7 @@ iterm_screen_put_text(iterm_screen *screen, const char *text)
 }
 
 void
-iterm_screen_move_cursor(iterm_screen *screen, int drow, int dcol)
+lterm_screen_move_cursor(lterm_screen *screen, int drow, int dcol)
 {
     if (!screen) {
         return;
@@ -140,7 +140,7 @@ iterm_screen_move_cursor(iterm_screen *screen, int drow, int dcol)
 }
 
 void
-iterm_screen_set_cursor(iterm_screen *screen, size_t row, size_t col)
+lterm_screen_set_cursor(lterm_screen *screen, size_t row, size_t col)
 {
     if (!screen) {
         return;
@@ -156,7 +156,7 @@ iterm_screen_set_cursor(iterm_screen *screen, size_t row, size_t col)
 }
 
 void
-iterm_screen_carriage_return(iterm_screen *screen)
+lterm_screen_carriage_return(lterm_screen *screen)
 {
     if (!screen) {
         return;
@@ -165,14 +165,14 @@ iterm_screen_carriage_return(iterm_screen *screen)
 }
 
 void
-iterm_screen_line_feed(iterm_screen *screen)
+lterm_screen_line_feed(lterm_screen *screen)
 {
     if (!screen) {
         return;
     }
     screen->cursor_row++;
     if (screen->cursor_row >= screen->grid.rows) {
-        size_t row_size = screen->grid.cols * sizeof(iterm_cell);
+        size_t row_size = screen->grid.cols * sizeof(lterm_cell);
         memmove(screen->grid.cells,
                 screen->grid.cells + screen->grid.cols,
                 (screen->grid.rows - 1) * row_size);
@@ -183,7 +183,7 @@ iterm_screen_line_feed(iterm_screen *screen)
     }
 }
 
-static void clear_cells(iterm_screen *screen, size_t start, size_t count)
+static void clear_cells(lterm_screen *screen, size_t start, size_t count)
 {
     if (!screen || !screen->grid.cells || count == 0) {
         return;
@@ -195,10 +195,10 @@ static void clear_cells(iterm_screen *screen, size_t start, size_t count)
     if (start + count > total) {
         count = total - start;
     }
-    memset(screen->grid.cells + start, 0, count * sizeof(iterm_cell));
+    memset(screen->grid.cells + start, 0, count * sizeof(lterm_cell));
 }
 
-void iterm_screen_clear_line(iterm_screen *screen, int mode)
+void lterm_screen_clear_line(lterm_screen *screen, int mode)
 {
     if (!screen || !screen->grid.cells) {
         return;
@@ -231,7 +231,7 @@ void iterm_screen_clear_line(iterm_screen *screen, int mode)
     clear_cells(screen, start, to - from);
 }
 
-void iterm_screen_clear_screen(iterm_screen *screen, int mode)
+void lterm_screen_clear_screen(lterm_screen *screen, int mode)
 {
     if (!screen || !screen->grid.cells) {
         return;
@@ -264,7 +264,7 @@ void iterm_screen_clear_screen(iterm_screen *screen, int mode)
     clear_cells(screen, start, count);
 }
 
-void iterm_screen_reset_attributes(iterm_screen *screen)
+void lterm_screen_reset_attributes(lterm_screen *screen)
 {
     if (!screen) {
         return;
@@ -274,13 +274,13 @@ void iterm_screen_reset_attributes(iterm_screen *screen)
     screen->current_flags = 0;
 }
 
-void iterm_screen_apply_sgr(iterm_screen *screen, const iterm_csi_param *param)
+void lterm_screen_apply_sgr(lterm_screen *screen, const lterm_csi_param *param)
 {
     if (!screen) {
         return;
     }
     if (!param || param->count == 0) {
-        iterm_screen_reset_attributes(screen);
+        lterm_screen_reset_attributes(screen);
         return;
     }
     for (int i = 0; i < param->count; ++i) {
@@ -306,25 +306,25 @@ void iterm_screen_apply_sgr(iterm_screen *screen, const iterm_csi_param *param)
         }
         switch (value) {
             case 0:
-                iterm_screen_reset_attributes(screen);
+                lterm_screen_reset_attributes(screen);
                 break;
             case 1:
-                screen->current_flags |= ITERM_CELL_FLAG_BOLD;
+                screen->current_flags |= LTERM_CELL_FLAG_BOLD;
                 break;
             case 4:
-                screen->current_flags |= ITERM_CELL_FLAG_UNDERLINE;
+                screen->current_flags |= LTERM_CELL_FLAG_UNDERLINE;
                 break;
             case 7:
-                screen->current_flags |= ITERM_CELL_FLAG_INVERSE;
+                screen->current_flags |= LTERM_CELL_FLAG_INVERSE;
                 break;
             case 22:
-                screen->current_flags &= ~ITERM_CELL_FLAG_BOLD;
+                screen->current_flags &= ~LTERM_CELL_FLAG_BOLD;
                 break;
             case 24:
-                screen->current_flags &= ~ITERM_CELL_FLAG_UNDERLINE;
+                screen->current_flags &= ~LTERM_CELL_FLAG_UNDERLINE;
                 break;
             case 27:
-                screen->current_flags &= ~ITERM_CELL_FLAG_INVERSE;
+                screen->current_flags &= ~LTERM_CELL_FLAG_INVERSE;
                 break;
             case 39:
                 screen->current_fg = 7;
@@ -338,8 +338,8 @@ void iterm_screen_apply_sgr(iterm_screen *screen, const iterm_csi_param *param)
     }
 }
 
-const iterm_scrollback *
-iterm_screen_scrollback(const iterm_screen *screen)
+const lterm_scrollback *
+lterm_screen_scrollback(const lterm_screen *screen)
 {
     return screen ? &screen->scrollback : NULL;
 }

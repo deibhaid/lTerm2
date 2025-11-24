@@ -3,8 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "iterm_token.h"
-#include "iterm_parser_context.h"
+#include "lterm_token.h"
+#include "lterm_parser_context.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,8 +28,8 @@ typedef struct {
 void vt100_dcs_parser_init(vt100_dcs_parser *parser);
 void vt100_dcs_parser_reset(vt100_dcs_parser *parser);
 size_t vt100_dcs_parser_decode(vt100_dcs_parser *parser,
-                               iterm_parser_context *context,
-                               iterm_token *token);
+                               lterm_parser_context *context,
+                               lterm_token *token);
 
 #ifdef __cplusplus
 }

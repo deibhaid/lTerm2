@@ -2,7 +2,7 @@
 
 ### Goals
 - Provide a Linux-first UI while preserving the upstream macOS UX patterns (tabs, splits, profiles, triggers, search, status bar).
-- Keep platform-agnostic terminal logic in reusable libraries (future `libiterm-core`).
+- Keep platform-agnostic terminal logic in reusable libraries (future `liblterm-core`).
 - Make the GTK shell modular so new features (AI panel, scripting console, tmux dashboard) can be added incrementally.
 
 ### Architecture
@@ -11,8 +11,8 @@
 | `app/` | Process lifecycle, command-line parsing, DBus registration | Wraps GtkApplication and the future automation API. |
 | `ui/window/` | Top-level window, menu bar, global shortcuts, drag/drop | Owns tab/split containers, dispatches actions to controllers. |
 | `ui/tab_manager/` | Tabs, split panes, layout management | Abstract tree structure to support arbitrary splits and future tiling. |
-| `ui/terminal_view/` | GTK widget embedding rendering surface | Talks to libiterm-core to render cells via Cairo/GL; handles input. |
-| `profiles/` | Profile models, persistence, migration from macOS formats | Reuses JSON/plist parsing from existing tools, stored under `~/.config/iterm`. |
+| `ui/terminal_view/` | GTK widget embedding rendering surface | Talks to liblterm-core to render cells via Cairo/GL; handles input. |
+| `profiles/` | Profile models, persistence, migration from macOS formats | Reuses JSON/plist parsing from existing tools, stored under `~/.config/lterm`. |
 | `integrations/` | Clipboard, notifications, keyring, URL handling | Backed by GDK, libnotify, libsecret, and xdg-desktop-portal. |
 | `automation/` | DBus/gRPC surface mirroring the upstream scripting model | Eventually supports triggers, bookmarks, scripts. |
 
@@ -24,7 +24,7 @@
 
 ### Dependencies
 - GTK4, GLib, libadwaita (optional for GNOME styling).
-- Future: libvterm/libiterm-core, libnotify, libsecret, xkbcommon, dbus-glib.
+- Future: libvterm/liblterm-core, libnotify, libsecret, xkbcommon, dbus-glib.
 
 ### Migration Steps
 1. **Core extraction** – start peeling rendering/session logic from `sources/PTY*` into portable C modules.

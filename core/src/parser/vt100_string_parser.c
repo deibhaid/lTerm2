@@ -23,9 +23,9 @@ vt100_string_parser_reset(vt100_string_parser *parser)
 
 size_t
 vt100_string_parser_decode(vt100_string_parser *parser,
-                           iterm_parser_context *context,
-                           iterm_token *token,
-                           iterm_token_type type)
+                           lterm_parser_context *context,
+                           lterm_token *token,
+                           lterm_token_type type)
 {
     (void)parser;
     if (!context || !token) {
@@ -46,7 +46,7 @@ vt100_string_parser_decode(vt100_string_parser *parser,
             finished = true;
             break;
         }
-        if (c == ITERM_CC_ESC) {
+        if (c == LTERM_CC_ESC) {
             if (remaining == 0) {
                 return 0;
             }
@@ -67,10 +67,10 @@ vt100_string_parser_decode(vt100_string_parser *parser,
         return 0;
     }
 
-    iterm_parser_advance_multiple(context, (int)consumed);
+    lterm_parser_advance_multiple(context, (int)consumed);
     token->type = type;
     if (payload_len > 0) {
-        iterm_token_set_ascii(token, payload_start, payload_len);
+        lterm_token_set_ascii(token, payload_start, payload_len);
     }
     return consumed;
 }

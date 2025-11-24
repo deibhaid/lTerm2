@@ -1,4 +1,4 @@
-#include "iterm_pty.h"
+#include "lterm_pty.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -28,7 +28,7 @@ set_nonblock(int fd)
 }
 
 void
-iterm_pty_init(iterm_pty *pty)
+lterm_pty_init(lterm_pty *pty)
 {
     if (!pty) {
         return;
@@ -38,7 +38,7 @@ iterm_pty_init(iterm_pty *pty)
 }
 
 bool
-iterm_pty_spawn(iterm_pty *pty, const char *program, char *const argv[], char *const envp[])
+lterm_pty_spawn(lterm_pty *pty, const char *program, char *const argv[], char *const envp[])
 {
     if (!pty || !program) {
         return false;
@@ -82,7 +82,7 @@ iterm_pty_spawn(iterm_pty *pty, const char *program, char *const argv[], char *c
 }
 
 bool
-iterm_pty_spawn_shell(iterm_pty *pty, const char *shell_path)
+lterm_pty_spawn_shell(lterm_pty *pty, const char *shell_path)
 {
     if (!pty) {
         return false;
@@ -92,11 +92,11 @@ iterm_pty_spawn_shell(iterm_pty *pty, const char *shell_path)
         shell = "/bin/bash";
     }
     char *const argv[] = {(char *)shell, "-l", NULL};
-    return iterm_pty_spawn(pty, shell, argv, NULL);
+    return lterm_pty_spawn(pty, shell, argv, NULL);
 }
 
 ssize_t
-iterm_pty_read(iterm_pty *pty, uint8_t *buffer, size_t length)
+lterm_pty_read(lterm_pty *pty, uint8_t *buffer, size_t length)
 {
     if (!pty || pty->master_fd < 0 || !buffer || length == 0) {
         errno = EINVAL;
@@ -110,7 +110,7 @@ iterm_pty_read(iterm_pty *pty, uint8_t *buffer, size_t length)
 }
 
 ssize_t
-iterm_pty_write(iterm_pty *pty, const uint8_t *data, size_t length)
+lterm_pty_write(lterm_pty *pty, const uint8_t *data, size_t length)
 {
     if (!pty || pty->master_fd < 0 || !data || length == 0) {
         errno = EINVAL;
@@ -124,25 +124,25 @@ iterm_pty_write(iterm_pty *pty, const uint8_t *data, size_t length)
 }
 
 int
-iterm_pty_get_fd(const iterm_pty *pty)
+lterm_pty_get_fd(const lterm_pty *pty)
 {
     return (pty && pty->master_fd >= 0) ? pty->master_fd : -1;
 }
 
 pid_t
-iterm_pty_child_pid(const iterm_pty *pty)
+lterm_pty_child_pid(const lterm_pty *pty)
 {
     return pty ? pty->child_pid : -1;
 }
 
 bool
-iterm_pty_is_active(const iterm_pty *pty)
+lterm_pty_is_active(const lterm_pty *pty)
 {
     return pty && pty->master_fd >= 0;
 }
 
 void
-iterm_pty_close(iterm_pty *pty)
+lterm_pty_close(lterm_pty *pty)
 {
     if (!pty) {
         return;

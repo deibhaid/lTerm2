@@ -4,7 +4,7 @@ Linux-first continuation of the upstream macOS terminal project. This repo start
 includes components that have been evaluated or rebuilt for Linux:
 
 - `core/` – platform-neutral terminal engine (Meson project that produces
-  `libiterm-core`).
+  `liblterm-core`).
 - `gtk-shell/` – GTK prototype for the new UI shell.
 - `docs/` – planning notes and migration guides for the port.
 - `current_work.md` – feature tracking ledger.
@@ -20,12 +20,12 @@ meson test -C builddir
 ```
 
 ### Run the GTK shell prototype
-The GTK shell links against `libiterm_core` built in the previous step.
+The GTK shell links against `liblterm-core` built in the previous step.
 ```bash
 cd gtk-shell
 meson setup builddir
 meson compile -C builddir
-./builddir/src/iterm2-gtk
+./builddir/src/lterm2-gtk
 ```
 
 ## Porting workflow

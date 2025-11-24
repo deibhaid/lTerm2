@@ -24,17 +24,17 @@ size_t
 vt100_ansi_parser_decode(vt100_ansi_parser *parser,
                          const uint8_t *data,
                          size_t length,
-                         iterm_token *token)
+                         lterm_token *token)
 {
     (void)parser;
     if (!data || length < 2 || !token) {
         return 0;
     }
-    if (data[0] != ITERM_CC_ESC) {
+    if (data[0] != LTERM_CC_ESC) {
         return 0;
     }
     if (data[1] == 'c') {
-        token->type = ITERM_TOKEN_ANSI_RIS;
+        token->type = LTERM_TOKEN_ANSI_RIS;
         token->code = 'c';
         return 2;
     }

@@ -14,12 +14,12 @@ typedef struct {
     uint8_t *data;
     int length;
     int consumed;
-} iterm_parser_context;
+} lterm_parser_context;
 
-static inline iterm_parser_context
-iterm_parser_context_make(uint8_t *data, int length)
+static inline lterm_parser_context
+lterm_parser_context_make(uint8_t *data, int length)
 {
-    iterm_parser_context ctx = {
+    lterm_parser_context ctx = {
         .data = data,
         .length = length,
         .consumed = 0,
@@ -28,31 +28,31 @@ iterm_parser_context_make(uint8_t *data, int length)
 }
 
 static inline int
-iterm_parser_can_advance(const iterm_parser_context *ctx)
+lterm_parser_can_advance(const lterm_parser_context *ctx)
 {
     return ctx->length > 0;
 }
 
 static inline uint8_t
-iterm_parser_peek(const iterm_parser_context *ctx)
+lterm_parser_peek(const lterm_parser_context *ctx)
 {
     return ctx->data[0];
 }
 
 static inline int
-iterm_parser_try_peek(const iterm_parser_context *ctx, uint8_t *out)
+lterm_parser_try_peek(const lterm_parser_context *ctx, uint8_t *out)
 {
-    if (!iterm_parser_can_advance(ctx)) {
+    if (!lterm_parser_can_advance(ctx)) {
         return 0;
     }
     if (out) {
-        *out = iterm_parser_peek(ctx);
+        *out = lterm_parser_peek(ctx);
     }
     return 1;
 }
 
 static inline void
-iterm_parser_advance(iterm_parser_context *ctx)
+lterm_parser_advance(lterm_parser_context *ctx)
 {
     ctx->data++;
     ctx->length--;
@@ -60,7 +60,7 @@ iterm_parser_advance(iterm_parser_context *ctx)
 }
 
 static inline void
-iterm_parser_advance_multiple(iterm_parser_context *ctx, int count)
+lterm_parser_advance_multiple(lterm_parser_context *ctx, int count)
 {
     ctx->data += count;
     ctx->length -= count;
@@ -68,45 +68,45 @@ iterm_parser_advance_multiple(iterm_parser_context *ctx, int count)
 }
 
 static inline int
-iterm_parser_try_advance(iterm_parser_context *ctx)
+lterm_parser_try_advance(lterm_parser_context *ctx)
 {
-    if (!iterm_parser_can_advance(ctx)) {
+    if (!lterm_parser_can_advance(ctx)) {
         return 0;
     }
-    iterm_parser_advance(ctx);
+    lterm_parser_advance(ctx);
     return 1;
 }
 
 static inline int
-iterm_parser_bytes_consumed(const iterm_parser_context *ctx)
+lterm_parser_bytes_consumed(const lterm_parser_context *ctx)
 {
     return ctx->consumed;
 }
 
 static inline uint8_t
-iterm_parser_consume(iterm_parser_context *ctx)
+lterm_parser_consume(lterm_parser_context *ctx)
 {
     uint8_t value = ctx->data[0];
-    iterm_parser_advance(ctx);
+    lterm_parser_advance(ctx);
     return value;
 }
 
 static inline int
-iterm_parser_try_consume(iterm_parser_context *ctx, uint8_t *out)
+lterm_parser_try_consume(lterm_parser_context *ctx, uint8_t *out)
 {
-    if (!iterm_parser_can_advance(ctx)) {
+    if (!lterm_parser_can_advance(ctx)) {
         return 0;
     }
     if (out) {
-        *out = iterm_parser_consume(ctx);
+        *out = lterm_parser_consume(ctx);
     } else {
-        iterm_parser_consume(ctx);
+        lterm_parser_consume(ctx);
     }
     return 1;
 }
 
 static inline void
-iterm_parser_backtrack_by(iterm_parser_context *ctx, int count)
+lterm_parser_backtrack_by(lterm_parser_context *ctx, int count)
 {
     ctx->data -= count;
     ctx->length += count;
@@ -114,13 +114,13 @@ iterm_parser_backtrack_by(iterm_parser_context *ctx, int count)
 }
 
 static inline void
-iterm_parser_backtrack(iterm_parser_context *ctx)
+lterm_parser_backtrack(lterm_parser_context *ctx)
 {
-    iterm_parser_backtrack_by(ctx, ctx->consumed);
+    lterm_parser_backtrack_by(ctx, ctx->consumed);
 }
 
 static inline int
-iterm_parser_bytes_until(iterm_parser_context *ctx, uint8_t target)
+lterm_parser_bytes_until(lterm_parser_context *ctx, uint8_t target)
 {
     uint8_t *ptr = memchr(ctx->data, target, ctx->length);
     if (!ptr) {
@@ -130,13 +130,13 @@ iterm_parser_bytes_until(iterm_parser_context *ctx, uint8_t target)
 }
 
 static inline int
-iterm_parser_length(const iterm_parser_context *ctx)
+lterm_parser_length(const lterm_parser_context *ctx)
 {
     return ctx->length;
 }
 
 static inline uint8_t *
-iterm_parser_peek_bytes(const iterm_parser_context *ctx, int length)
+lterm_parser_peek_bytes(const lterm_parser_context *ctx, int length)
 {
     if (ctx->length < length) {
         return NULL;
@@ -145,13 +145,13 @@ iterm_parser_peek_bytes(const iterm_parser_context *ctx, int length)
 }
 
 static inline int
-iterm_parser_consume_integer(iterm_parser_context *ctx, int *out, int *overflow)
+lterm_parser_consume_integer(lterm_parser_context *ctx, int *out, int *overflow)
 {
     int digits = 0;
     int value = 0;
     int local_overflow = 0;
-    while (iterm_parser_can_advance(ctx)) {
-        uint8_t c = iterm_parser_peek(ctx);
+    while (lterm_parser_can_advance(ctx)) {
+        uint8_t c = lterm_parser_peek(ctx);
         if (!isdigit(c)) {
             break;
         }
@@ -162,7 +162,7 @@ iterm_parser_consume_integer(iterm_parser_context *ctx, int *out, int *overflow)
             value *= 10;
             value += (c - '0');
         }
-        iterm_parser_advance(ctx);
+        lterm_parser_advance(ctx);
     }
     if (out) {
         *out = value;

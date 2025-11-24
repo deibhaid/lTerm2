@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "iterm_token.h"
+#include "lterm_token.h"
 #include "vt100_csi_parser.h"
 #include "vt100_string_parser.h"
 #include "vt100_ansi_parser.h"
@@ -30,7 +30,7 @@ size_t vt100_control_parser_parse(vt100_control_parser *parser,
                                   vt100_dcs_parser *dcs_parser,
                                   const uint8_t *data,
                                   size_t length,
-                                  iterm_token *token);
+                                  lterm_token *token);
 
 #ifdef __cplusplus
 }

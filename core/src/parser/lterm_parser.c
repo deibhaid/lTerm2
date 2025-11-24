@@ -1,11 +1,11 @@
-#include "iterm_parser.h"
+#include "lterm_parser.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "iterm_reader.h"
-#include "iterm_screen.h"
+#include "lterm_reader.h"
+#include "lterm_screen.h"
 #include "vt100_control_parser.h"
 #include "vt100_csi_parser.h"
 #include "vt100_string_parser.h"
@@ -19,19 +19,19 @@ struct buffer {
     size_t capacity;
 };
 
-struct iterm_parser {
+struct lterm_parser {
     struct buffer ascii_buffer;
-    iterm_reader reader;
+    lterm_reader reader;
     vt100_control_parser control_parser;
     vt100_csi_parser csi_parser;
     vt100_string_parser string_parser;
     vt100_ansi_parser ansi_parser;
     vt100_osc_parser osc_parser;
     vt100_dcs_parser dcs_parser;
-    iterm_screen *screen;
+    lterm_screen *screen;
 };
 
-static int csi_param_value(const iterm_csi_param *param, int index, int fallback)
+static int csi_param_value(const lterm_csi_param *param, int index, int fallback)
 {
     if (!param || index < 0 || index >= param->count) {
         return fallback;
@@ -40,52 +40,52 @@ static int csi_param_value(const iterm_csi_param *param, int index, int fallback
     return value == -1 ? fallback : value;
 }
 
-static bool apply_token_to_screen(iterm_parser *parser, const iterm_token *token)
+static bool apply_token_to_screen(lterm_parser *parser, const lterm_token *token)
 {
     if (!parser || !parser->screen || !token) {
         return false;
     }
     switch (token->type) {
-        case ITERM_TOKEN_CSI_CUU: {
+        case LTERM_TOKEN_CSI_CUU: {
             int count = csi_param_value(&token->csi, 0, 1);
-            iterm_screen_move_cursor(parser->screen, -count, 0);
+            lterm_screen_move_cursor(parser->screen, -count, 0);
             return true;
         }
-        case ITERM_TOKEN_CSI_CUD: {
+        case LTERM_TOKEN_CSI_CUD: {
             int count = csi_param_value(&token->csi, 0, 1);
-            iterm_screen_move_cursor(parser->screen, count, 0);
+            lterm_screen_move_cursor(parser->screen, count, 0);
             return true;
         }
-        case ITERM_TOKEN_CSI_CUF: {
+        case LTERM_TOKEN_CSI_CUF: {
             int count = csi_param_value(&token->csi, 0, 1);
-            iterm_screen_move_cursor(parser->screen, 0, count);
+            lterm_screen_move_cursor(parser->screen, 0, count);
             return true;
         }
-        case ITERM_TOKEN_CSI_CUB: {
+        case LTERM_TOKEN_CSI_CUB: {
             int count = csi_param_value(&token->csi, 0, 1);
-            iterm_screen_move_cursor(parser->screen, 0, -count);
+            lterm_screen_move_cursor(parser->screen, 0, -count);
             return true;
         }
-        case ITERM_TOKEN_CSI_CUP: {
+        case LTERM_TOKEN_CSI_CUP: {
             int row = csi_param_value(&token->csi, 0, 1);
             int col = csi_param_value(&token->csi, 1, 1);
             size_t target_row = row > 0 ? (size_t)(row - 1) : 0;
             size_t target_col = col > 0 ? (size_t)(col - 1) : 0;
-            iterm_screen_set_cursor(parser->screen, target_row, target_col);
+            lterm_screen_set_cursor(parser->screen, target_row, target_col);
             return true;
         }
-        case ITERM_TOKEN_CSI_ED: {
+        case LTERM_TOKEN_CSI_ED: {
             int mode = csi_param_value(&token->csi, 0, 0);
-            iterm_screen_clear_screen(parser->screen, mode);
+            lterm_screen_clear_screen(parser->screen, mode);
             return true;
         }
-        case ITERM_TOKEN_CSI_EL: {
+        case LTERM_TOKEN_CSI_EL: {
             int mode = csi_param_value(&token->csi, 0, 0);
-            iterm_screen_clear_line(parser->screen, mode);
+            lterm_screen_clear_line(parser->screen, mode);
             return true;
         }
-        case ITERM_TOKEN_CSI_SGR:
-            iterm_screen_apply_sgr(parser->screen, &token->csi);
+        case LTERM_TOKEN_CSI_SGR:
+            lterm_screen_apply_sgr(parser->screen, &token->csi);
             return true;
         default:
             return false;
@@ -129,31 +129,31 @@ buffer_reset(struct buffer *buffer)
 }
 
 static void
-emit_token(iterm_parser_callback callback,
+emit_token(lterm_parser_callback callback,
            void *user_data,
-           iterm_token_type type,
+           lterm_token_type type,
            const uint8_t *data,
            size_t length)
 {
-    if (!callback || type == ITERM_TOKEN_NONE) {
+    if (!callback || type == LTERM_TOKEN_NONE) {
         return;
     }
-    iterm_token token;
-    iterm_token_init(&token);
+    lterm_token token;
+    lterm_token_init(&token);
     token.type = type;
     if (data && length) {
-        if (type == ITERM_TOKEN_CONTROL) {
+        if (type == LTERM_TOKEN_CONTROL) {
             token.code = data[0];
         } else {
-            iterm_token_set_ascii(&token, data, length);
+            lterm_token_set_ascii(&token, data, length);
         }
     }
     callback(&token, user_data);
-    iterm_token_free(&token);
+    lterm_token_free(&token);
 }
 
 static void
-flush_ascii(iterm_parser *parser, iterm_parser_callback callback, void *user_data)
+flush_ascii(lterm_parser *parser, lterm_parser_callback callback, void *user_data)
 {
     if (!parser->ascii_buffer.length) {
         return;
@@ -162,26 +162,26 @@ flush_ascii(iterm_parser *parser, iterm_parser_callback callback, void *user_dat
         char *temp = malloc(parser->ascii_buffer.length + 1);
         memcpy(temp, parser->ascii_buffer.data, parser->ascii_buffer.length);
         temp[parser->ascii_buffer.length] = '\0';
-        iterm_screen_put_text(parser->screen, temp);
+        lterm_screen_put_text(parser->screen, temp);
         free(temp);
     } else {
         emit_token(callback,
                    user_data,
-                   ITERM_TOKEN_ASCII,
+                   LTERM_TOKEN_ASCII,
                    parser->ascii_buffer.data,
                    parser->ascii_buffer.length);
     }
     buffer_reset(&parser->ascii_buffer);
 }
 
-iterm_parser *
-iterm_parser_new(iterm_screen *screen)
+lterm_parser *
+lterm_parser_new(lterm_screen *screen)
 {
-    iterm_parser *parser = calloc(1, sizeof(*parser));
+    lterm_parser *parser = calloc(1, sizeof(*parser));
     if (!parser) {
         return NULL;
     }
-    iterm_reader_init(&parser->reader);
+    lterm_reader_init(&parser->reader);
     vt100_control_parser_init(&parser->control_parser);
     vt100_csi_parser_init(&parser->csi_parser);
     vt100_string_parser_init(&parser->string_parser);
@@ -193,13 +193,13 @@ iterm_parser_new(iterm_screen *screen)
 }
 
 void
-iterm_parser_free(iterm_parser *parser)
+lterm_parser_free(lterm_parser *parser)
 {
     if (!parser) {
         return;
     }
     free(parser->ascii_buffer.data);
-    iterm_reader_free(&parser->reader);
+    lterm_reader_free(&parser->reader);
     vt100_control_parser_reset(&parser->control_parser);
     vt100_csi_parser_reset(&parser->csi_parser);
     vt100_string_parser_reset(&parser->string_parser);
@@ -210,13 +210,13 @@ iterm_parser_free(iterm_parser *parser)
 }
 
 void
-iterm_parser_reset(iterm_parser *parser)
+lterm_parser_reset(lterm_parser *parser)
 {
     if (!parser) {
         return;
     }
     buffer_reset(&parser->ascii_buffer);
-    iterm_reader_reset(&parser->reader);
+    lterm_reader_reset(&parser->reader);
     vt100_control_parser_reset(&parser->control_parser);
     vt100_csi_parser_reset(&parser->csi_parser);
     vt100_string_parser_reset(&parser->string_parser);
@@ -226,18 +226,18 @@ iterm_parser_reset(iterm_parser *parser)
 }
 
 void
-iterm_parser_feed(iterm_parser *parser,
+lterm_parser_feed(lterm_parser *parser,
                   const uint8_t *bytes,
                   size_t length,
-                  iterm_parser_callback callback,
+                  lterm_parser_callback callback,
                   void *user_data)
 {
     if (!parser || !bytes) {
         return;
     }
-    iterm_reader_append(&parser->reader, bytes, length);
-    iterm_reader_cursor cursor;
-    iterm_reader_cursor_init(&cursor, &parser->reader);
+    lterm_reader_append(&parser->reader, bytes, length);
+    lterm_reader_cursor cursor;
+    lterm_reader_cursor_init(&cursor, &parser->reader);
     size_t processed = 0;
     bool need_more_data = false;
     while (cursor.length > 0) {
@@ -251,8 +251,8 @@ iterm_parser_feed(iterm_parser *parser,
 
         if (is_control) {
             flush_ascii(parser, callback, user_data);
-            iterm_token token;
-            iterm_token_init(&token);
+            lterm_token token;
+            lterm_token_init(&token);
             size_t consumed = vt100_control_parser_parse(&parser->control_parser,
                                                          &parser->csi_parser,
                                                          &parser->string_parser,
@@ -263,7 +263,7 @@ iterm_parser_feed(iterm_parser *parser,
                                                          cursor.length,
                                                          &token);
             if (consumed == 0) {
-                iterm_token_free(&token);
+                lterm_token_free(&token);
                 need_more_data = true;
                 break;
             }
@@ -271,10 +271,10 @@ iterm_parser_feed(iterm_parser *parser,
             if (parser->screen) {
                 consumed = apply_token_to_screen(parser, &token);
             }
-            if (!consumed && token.type != ITERM_TOKEN_NONE && token.type != ITERM_TOKEN_WAIT) {
+            if (!consumed && token.type != LTERM_TOKEN_NONE && token.type != LTERM_TOKEN_WAIT) {
                 callback(&token, user_data);
             }
-            iterm_token_free(&token);
+            lterm_token_free(&token);
             cursor.data += consumed;
             cursor.length -= consumed;
             processed += consumed;
@@ -286,7 +286,7 @@ iterm_parser_feed(iterm_parser *parser,
         cursor.length--;
         processed++;
     }
-    iterm_reader_consume(&parser->reader, processed);
+    lterm_reader_consume(&parser->reader, processed);
 
     if (!need_more_data) {
         flush_ascii(parser, callback, user_data);

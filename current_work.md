@@ -17,8 +17,8 @@ Single source of truth for parity between the macOS upstream terminal and the ne
 ## Feature List
 | Category | Feature | Description | Status | Notes |
 | --- | --- | --- | --- | --- |
-| Terminal Core | Terminal parser/tokenizer | VT100/VT220 state machine, CSI/OSC/DCS | Complete | `libiterm-core` parser migrated to C |
-| Terminal Core | Screen/grid + scrollback | Cell buffer, cursor, wrap, scrollback | Complete | `iterm_screen` with grid/scrollback wired to parser |
+| Terminal Core | Terminal parser/tokenizer | VT100/VT220 state machine, CSI/OSC/DCS | Complete | `liblterm-core` parser migrated to C |
+| Terminal Core | Screen/grid + scrollback | Cell buffer, cursor, wrap, scrollback | Complete | `lterm_screen` with grid/scrollback wired to parser |
 | Terminal Core | GTK renderer bridge | Terminal view, Cairo/Pango output | Complete | `terminal_view` + `core_bridge` render demo |
 | Terminal Core | PTY/process plumbing | PTYTask replacement, session I/O | In progress | PTY abstraction + GTK shell spawn + keyboard input path forwarding to PTY |
 | Terminal Core | Mouse reporting | X10/SGR/URXVT modes | Pending | Depends on input handling |
@@ -36,7 +36,7 @@ Single source of truth for parity between the macOS upstream terminal and the ne
 | UX Enhancements | Broadcast/linked input | Send input to multiple panes | Pending | Depends on session manager |
 | Automation | Triggers & notifications | Regex triggers, scripts, sounds | Pending | Depends on scripting host |
 | Automation | Scripts API (AppleScript parity) | DBus/gRPC automation surface | Pending | Design in GTK_SHELL_DESIGN |
-| Integrations | tmux integration | Native tmux controller | Pending | Requires libiterm-core hooks |
+| Integrations | tmux integration | Native tmux controller | Pending | Requires liblterm-core hooks |
 | Integrations | Notifications & badges | Desktop notifications, dock badges | Pending | Map to libnotify / portals |
 | Integrations | Clipboard & OSC 52 | Clipboard sync, secure paste dialog | In progress | OSC 52 demo wired to labels |
 | Security | Secure keyboard entry & privacy | Disable key logging, warn user | Pending | Needs OS-level hooks |

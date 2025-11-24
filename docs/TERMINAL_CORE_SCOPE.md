@@ -20,7 +20,7 @@ Goal: identify the Objective-C/C components that form the upstream terminal engi
 - Swift/Objective-C bridging headers referenced by `PTYSession` (e.g., the upstream `SharedARC-Swift.h`) → ensure core avoids Swift-only helpers.
 
 ### 3. Extraction Strategy
-1. **Create `core/` (working name `libiterm-core`)** with Meson target building on macOS/Linux.
+1. **Create `core/` (working name `liblterm-core`)** with Meson target building on macOS/Linux.
 2. **Move parser/state machine files first** – they have limited AppKit surface, so porting means replacing `NSColor`/`NSString` helpers and removing `<Cocoa/Cocoa.h>` includes.
 3. **Introduce abstract interfaces** for rendering hooks:
    - `it_terminal_delegate` struct of function pointers (append glyphs, scroll, set cursor, ring bell, send data). This replaces Objective-C delegate protocols such as `VT100TerminalDelegate`.
@@ -30,8 +30,8 @@ Goal: identify the Objective-C/C components that form the upstream terminal engi
 
 ### 4. Immediate Tasks
 1. **Parser bundle** *(complete for MVP)*: tokenizer/state machine/token structs are now in `core/src/parser`. Ongoing work is focused on coverage (full CSI/OSC/SGR semantics) rather than scaffolding.
-2. **Screen bundle** *(in progress)*: `iterm_screen` provides a basic grid/cursor/scrollback; next step is attribute handling, margins, and scroll regions pulled from `Screen.*`/`VT100Grid.*`.
-3. **PTY/process layer** *(new)*: `iterm_pty` wraps `openpty`/`fork` and powers the GTK shell’s login session. Upcoming work involves session management (pty lifecycle, resizing, flow control, send data API).
+2. **Screen bundle** *(in progress)*: `lterm_screen` provides a basic grid/cursor/scrollback; next step is attribute handling, margins, and scroll regions pulled from `Screen.*`/`VT100Grid.*`.
+3. **PTY/process layer** *(new)*: `lterm_pty` wraps `openpty`/`fork` and powers the GTK shell’s login session. Upcoming work involves session management (pty lifecycle, resizing, flow control, send data API).
 4. **Tracking**: log progress in `current_work.md` and add TODOs per bundle (e.g., parser coverage, screen attributes, PTY lifecycle, tmux bridge).
 
 ### 5. References

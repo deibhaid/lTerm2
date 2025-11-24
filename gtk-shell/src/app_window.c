@@ -36,7 +36,7 @@ create_placeholder(const char *title, GtkWidget **label_out)
 }
 
 GtkWidget *
-iterm_app_window_new(GtkApplication *app)
+lterm_app_window_new(GtkApplication *app)
 {
     GtkWidget *window = gtk_application_window_new(app);
     gtk_window_set_default_size(GTK_WINDOW(window), 1200, 720);

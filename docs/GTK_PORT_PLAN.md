@@ -14,7 +14,7 @@
 ### 3. Target Architecture (Linux)
 | Layer | Responsibilities | Notes |
 | --- | --- | --- |
-| **libiterm-core** | Terminal emulation, rendering pipeline, tmux bridge, triggers, profile models, scripting hooks | Refactor Objective-C into platform-neutral C/C++ (or Swift w/ GNUStep) and wrap via C ABI for GTK UI. Separate rendering backend (e.g., expose draw buffer) from AppKit. |
+| **liblterm-core** | Terminal emulation, rendering pipeline, tmux bridge, triggers, profile models, scripting hooks | Refactor Objective-C into platform-neutral C/C++ (or Swift w/ GNUStep) and wrap via C ABI for GTK UI. Separate rendering backend (e.g., expose draw buffer) from AppKit. |
 | **Platform services** | Clipboard, notifications, secure storage, global hotkeys, URL handlers | Map to Linux equivalents: GTK clipboard, libnotify, libsecret/gnome-keyring, xdg-desktop-portal, DBus, libxkbcommon for hotkeys. |
 | **GTK UI Shell** | Windows, tabs, splits, preferences, status bar, inspector panes | Recreate the upstream UI using GTK widgets. Provide CSS/themeing to mimic macOS styling. Implement layout manager for tabs/splits and profile editor UI. |
 | **Automation layer** | DBus API and/or gRPC/gRPC-web for scripting; optional Python plug-ins | Replace AppleScript with DBus interface; expose same operations as current scripting bridge. Integrate existing Python helpers under `tools/` where possible. |
@@ -27,14 +27,14 @@
    - Define new core module boundaries (headers, unit tests).
 2. **Core refactor**
    - Strip direct `NS*` types from reusable code; introduce abstraction interfaces for font, color, clipboard, timers, run loops.
-   - Introduce Meson/CMake project that builds `libiterm-core` on macOS/Linux to validate portability.
+   - Introduce Meson/CMake project that builds `liblterm-core` on macOS/Linux to validate portability.
 3. **Platform services layer**
    - Implement Linux glue (GTK clipboard, libnotify, libsecret, global hotkeys using X11/Wayland APIs).
    - Replace Keychain usage with libsecret backend; substitute macOS notifications with freedesktop notifications.
 4. **GTK UI shell**
    - Build GTK app skeleton with session list, tabs, split panes, preference dialog.
    - Port profile editor UI, color picker, triggers, key mappings.
-   - Implement rendering widget backed by libiterm-core’s drawing buffer (Cairo or OpenGL).
+   - Implement rendering widget backed by liblterm-core’s drawing buffer (Cairo or OpenGL).
 5. **Automation & scripting**
    - Design DBus or gRPC API mirroring the upstream AppleScript schema.
    - Rehost Python tools to call new API; ensure triggers/scripting console continue to work.
@@ -48,8 +48,8 @@
 
 ### 5. Immediate Next Steps
 1. Choose implementation language/bindings for GTK layer (C/gtk, C++/gtkmm, Swift/SwiftGTK, Rust/gtk-rs). This affects how much Objective-C code can be reused directly.
-2. Produce a component map showing which Objective-C files migrate to libiterm-core vs. Linux-specific replacements.
-3. Prototype minimal libiterm-core build: extract `VT100Terminal`, `Screen`, `PTYTask` equivalents and compile standalone on Linux to validate dependency surface.
+2. Produce a component map showing which Objective-C files migrate to liblterm-core vs. Linux-specific replacements.
+3. Prototype minimal liblterm-core build: extract `VT100Terminal`, `Screen`, `PTYTask` equivalents and compile standalone on Linux to validate dependency surface.
 4. Spike a GTK window hosting a Cairo/GL drawing area that can consume a dummy frame buffer from the core, ensuring rendering path is viable.
 
 ### 6. Risks & Considerations

@@ -1,4 +1,4 @@
-#include "iterm_reader.h"
+#include "lterm_reader.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +6,7 @@
 #define READER_DEFAULT_CAPACITY 65536
 
 void
-iterm_reader_init(iterm_reader *reader)
+lterm_reader_init(lterm_reader *reader)
 {
     if (!reader) {
         return;
@@ -18,7 +18,7 @@ iterm_reader_init(iterm_reader *reader)
 }
 
 void
-iterm_reader_free(iterm_reader *reader)
+lterm_reader_free(lterm_reader *reader)
 {
     if (!reader) {
         return;
@@ -31,7 +31,7 @@ iterm_reader_free(iterm_reader *reader)
 }
 
 void
-iterm_reader_reset(iterm_reader *reader)
+lterm_reader_reset(lterm_reader *reader)
 {
     if (!reader) {
         return;
@@ -46,7 +46,7 @@ iterm_reader_reset(iterm_reader *reader)
 }
 
 static void
-iterm_reader_compact(iterm_reader *reader)
+lterm_reader_compact(lterm_reader *reader)
 {
     if (!reader || reader->offset == 0) {
         return;
@@ -58,14 +58,14 @@ iterm_reader_compact(iterm_reader *reader)
 }
 
 void
-iterm_reader_append(iterm_reader *reader, const uint8_t *data, size_t length)
+lterm_reader_append(lterm_reader *reader, const uint8_t *data, size_t length)
 {
     if (!reader || !data || !length) {
         return;
     }
     size_t remaining_space = reader->capacity - reader->length;
     if (remaining_space < length) {
-        iterm_reader_compact(reader);
+        lterm_reader_compact(reader);
         remaining_space = reader->capacity - reader->length;
     }
     if (remaining_space < length) {
@@ -85,7 +85,7 @@ iterm_reader_append(iterm_reader *reader, const uint8_t *data, size_t length)
 }
 
 void
-iterm_reader_cursor_init(iterm_reader_cursor *cursor, const iterm_reader *reader)
+lterm_reader_cursor_init(lterm_reader_cursor *cursor, const lterm_reader *reader)
 {
     if (!cursor || !reader) {
         return;
@@ -95,19 +95,19 @@ iterm_reader_cursor_init(iterm_reader_cursor *cursor, const iterm_reader *reader
 }
 
 size_t
-iterm_reader_cursor_size(const iterm_reader_cursor *cursor)
+lterm_reader_cursor_size(const lterm_reader_cursor *cursor)
 {
     return cursor ? cursor->length : 0;
 }
 
 uint8_t
-iterm_reader_cursor_peek(const iterm_reader_cursor *cursor)
+lterm_reader_cursor_peek(const lterm_reader_cursor *cursor)
 {
     return (cursor && cursor->length) ? cursor->data[0] : 0;
 }
 
 uint8_t
-iterm_reader_cursor_peek_offset(const iterm_reader_cursor *cursor, size_t offset)
+lterm_reader_cursor_peek_offset(const lterm_reader_cursor *cursor, size_t offset)
 {
     if (!cursor || offset >= cursor->length) {
         return 0;
@@ -116,7 +116,7 @@ iterm_reader_cursor_peek_offset(const iterm_reader_cursor *cursor, size_t offset
 }
 
 void
-iterm_reader_cursor_advance(iterm_reader_cursor *cursor, size_t count)
+lterm_reader_cursor_advance(lterm_reader_cursor *cursor, size_t count)
 {
     if (!cursor || count > cursor->length) {
         return;
@@ -126,13 +126,13 @@ iterm_reader_cursor_advance(iterm_reader_cursor *cursor, size_t count)
 }
 
 const uint8_t *
-iterm_reader_cursor_ptr(const iterm_reader_cursor *cursor)
+lterm_reader_cursor_ptr(const lterm_reader_cursor *cursor)
 {
     return cursor ? cursor->data : NULL;
 }
 
 void
-iterm_reader_consume(iterm_reader *reader, size_t count)
+lterm_reader_consume(lterm_reader *reader, size_t count)
 {
     if (!reader || count > reader->length - reader->offset) {
         return;
@@ -141,7 +141,7 @@ iterm_reader_consume(iterm_reader *reader, size_t count)
 }
 
 void
-iterm_reader_consumer_init(iterm_reader_consumer *consumer, const iterm_reader_cursor *cursor)
+lterm_reader_consumer_init(lterm_reader_consumer *consumer, const lterm_reader_cursor *cursor)
 {
     if (!consumer || !cursor) {
         return;
@@ -151,7 +151,7 @@ iterm_reader_consumer_init(iterm_reader_consumer *consumer, const iterm_reader_c
 }
 
 void
-iterm_reader_consumer_reset(iterm_reader_consumer *consumer)
+lterm_reader_consumer_reset(lterm_reader_consumer *consumer)
 {
     if (!consumer) {
         return;
@@ -160,15 +160,15 @@ iterm_reader_consumer_reset(iterm_reader_consumer *consumer)
 }
 
 uint8_t
-iterm_reader_consumer_peek(iterm_reader_consumer *consumer)
+lterm_reader_consumer_peek(lterm_reader_consumer *consumer)
 {
-    return consumer ? iterm_reader_cursor_peek(&consumer->cursor) : 0;
+    return consumer ? lterm_reader_cursor_peek(&consumer->cursor) : 0;
 }
 
 int
-iterm_reader_consumer_try_peek(iterm_reader_consumer *consumer, uint8_t *out)
+lterm_reader_consumer_try_peek(lterm_reader_consumer *consumer, uint8_t *out)
 {
-    if (!consumer || iterm_reader_cursor_size(&consumer->cursor) == 0) {
+    if (!consumer || lterm_reader_cursor_size(&consumer->cursor) == 0) {
         return 0;
     }
     if (out) {
@@ -178,23 +178,23 @@ iterm_reader_consumer_try_peek(iterm_reader_consumer *consumer, uint8_t *out)
 }
 
 void
-iterm_reader_consumer_advance(iterm_reader_consumer *consumer, size_t count)
+lterm_reader_consumer_advance(lterm_reader_consumer *consumer, size_t count)
 {
     if (!consumer || count > consumer->cursor.length) {
         return;
     }
-    iterm_reader_cursor_advance(&consumer->cursor, count);
+    lterm_reader_cursor_advance(&consumer->cursor, count);
     consumer->consumed += count;
 }
 
 size_t
-iterm_reader_consumer_consumed(const iterm_reader_consumer *consumer)
+lterm_reader_consumer_consumed(const lterm_reader_consumer *consumer)
 {
     return consumer ? consumer->consumed : 0;
 }
 
 size_t
-iterm_reader_consumer_remaining(const iterm_reader_consumer *consumer)
+lterm_reader_consumer_remaining(const lterm_reader_consumer *consumer)
 {
     return consumer ? consumer->cursor.length : 0;
 }

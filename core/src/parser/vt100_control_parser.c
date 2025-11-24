@@ -3,13 +3,13 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "iterm_parser_context.h"
+#include "lterm_parser_context.h"
 #include "vt100_csi_parser.h"
 #include "vt100_string_parser.h"
 #include "vt100_ansi_parser.h"
 #include "vt100_osc_parser.h"
 #include "vt100_dcs_parser.h"
-#include "iterm_token_types.h"
+#include "lterm_token_types.h"
 
 void
 vt100_control_parser_init(vt100_control_parser *parser)
@@ -61,7 +61,7 @@ vt100_control_parser_parse(vt100_control_parser *parser,
                            vt100_dcs_parser *dcs_parser,
                            const uint8_t *data,
                            size_t length,
-                           iterm_token *token)
+                           lterm_token *token)
 {
     if (!parser || !data || !length || !token) {
         return 0;
@@ -73,64 +73,64 @@ vt100_control_parser_parse(vt100_control_parser *parser,
         dcs_parser->support_8bit_controls = support8;
     }
 
-    if (byte == ITERM_CC_NULL) {
-        size_t consumed = consume_run(ITERM_CC_NULL, data, length);
-        token->type = ITERM_TOKEN_SKIP;
-        token->code = ITERM_CC_NULL;
+    if (byte == LTERM_CC_NULL) {
+        size_t consumed = consume_run(LTERM_CC_NULL, data, length);
+        token->type = LTERM_TOKEN_SKIP;
+        token->code = LTERM_CC_NULL;
         return consumed;
     }
 
-    if (byte == ITERM_CC_ESC || (support8 && (byte == ITERM_CC_C1_CSI || byte == ITERM_CC_C1_OSC || byte == ITERM_CC_C1_DCS))) {
-        if (byte == ITERM_CC_ESC && length == 1) {
-            token->type = ITERM_TOKEN_WAIT;
+    if (byte == LTERM_CC_ESC || (support8 && (byte == LTERM_CC_C1_CSI || byte == LTERM_CC_C1_OSC || byte == LTERM_CC_C1_DCS))) {
+        if (byte == LTERM_CC_ESC && length == 1) {
+            token->type = LTERM_TOKEN_WAIT;
             return 0;
         }
 
-        size_t prefix = (data[0] == ITERM_CC_ESC) ? 2 : 1;
+        size_t prefix = (data[0] == LTERM_CC_ESC) ? 2 : 1;
         if (length < prefix) {
-            token->type = ITERM_TOKEN_WAIT;
+            token->type = LTERM_TOKEN_WAIT;
             return 0;
         }
 
-        uint8_t indicator = (data[0] == ITERM_CC_ESC) ? data[1] : data[0];
+        uint8_t indicator = (data[0] == LTERM_CC_ESC) ? data[1] : data[0];
         const uint8_t *payload = data + prefix;
         size_t payload_len = (length > prefix) ? length - prefix : 0;
 
-        if (indicator == '[' || indicator == ITERM_CC_C1_CSI) {
-            iterm_parser_context ctx = iterm_parser_context_make((uint8_t *)payload, (int)payload_len);
+        if (indicator == '[' || indicator == LTERM_CC_C1_CSI) {
+            lterm_parser_context ctx = lterm_parser_context_make((uint8_t *)payload, (int)payload_len);
             size_t consumed = vt100_csi_parser_decode(csi_parser, &ctx, token);
             if (consumed == 0) {
-                token->type = ITERM_TOKEN_WAIT;
+                token->type = LTERM_TOKEN_WAIT;
                 return 0;
             }
             return consumed + prefix;
         }
 
-        if (indicator == ']' || indicator == ITERM_CC_C1_OSC) {
-            iterm_parser_context ctx = iterm_parser_context_make((uint8_t *)payload, (int)payload_len);
-            iterm_token temp;
-            iterm_token_init(&temp);
-            size_t consumed = vt100_string_parser_decode(string_parser, &ctx, &temp, ITERM_TOKEN_OSC);
+        if (indicator == ']' || indicator == LTERM_CC_C1_OSC) {
+            lterm_parser_context ctx = lterm_parser_context_make((uint8_t *)payload, (int)payload_len);
+            lterm_token temp;
+            lterm_token_init(&temp);
+            size_t consumed = vt100_string_parser_decode(string_parser, &ctx, &temp, LTERM_TOKEN_OSC);
             if (consumed == 0) {
-                iterm_token_free(&temp);
-                token->type = ITERM_TOKEN_WAIT;
+                lterm_token_free(&temp);
+                token->type = LTERM_TOKEN_WAIT;
                 return 0;
             }
             size_t parsed = vt100_osc_parser_decode(osc_parser, temp.ascii.buffer, temp.ascii.length, token);
-            iterm_token_free(&temp);
+            lterm_token_free(&temp);
             if (parsed == 0) {
-                token->type = ITERM_TOKEN_WAIT;
+                token->type = LTERM_TOKEN_WAIT;
                 return 0;
             }
-            token->type = ITERM_TOKEN_OSC;
+            token->type = LTERM_TOKEN_OSC;
             return consumed + prefix;
         }
 
-        if (indicator == 'P' || indicator == ITERM_CC_C1_DCS) {
-            iterm_parser_context ctx = iterm_parser_context_make((uint8_t *)payload, (int)payload_len);
+        if (indicator == 'P' || indicator == LTERM_CC_C1_DCS) {
+            lterm_parser_context ctx = lterm_parser_context_make((uint8_t *)payload, (int)payload_len);
             size_t consumed = vt100_dcs_parser_decode(dcs_parser, &ctx, token);
             if (consumed == 0) {
-                token->type = ITERM_TOKEN_WAIT;
+                token->type = LTERM_TOKEN_WAIT;
                 return 0;
             }
             return consumed + prefix;
@@ -139,13 +139,13 @@ vt100_control_parser_parse(vt100_control_parser *parser,
         if (indicator == '(' || indicator == ')' || indicator == '*' || indicator == '+') {
             size_t consumed = vt100_ansi_parser_decode(ansi_parser, data, length, token);
             if (consumed == 0) {
-                token->type = ITERM_TOKEN_WAIT;
+                token->type = LTERM_TOKEN_WAIT;
                 return 0;
             }
             return consumed;
         }
 
-        token->type = ITERM_TOKEN_WAIT;
+        token->type = LTERM_TOKEN_WAIT;
         return 0;
     }
 
@@ -155,7 +155,7 @@ vt100_control_parser_parse(vt100_control_parser *parser,
         return 1;
     }
 
-    token->type = ITERM_TOKEN_NONE;
+    token->type = LTERM_TOKEN_NONE;
     return 0;
 }
 

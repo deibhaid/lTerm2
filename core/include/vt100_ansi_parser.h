@@ -3,8 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "iterm_token.h"
-#include "iterm_token_types.h"
+#include "lterm_token.h"
+#include "lterm_token_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,7 +19,7 @@ void vt100_ansi_parser_reset(vt100_ansi_parser *parser);
 size_t vt100_ansi_parser_decode(vt100_ansi_parser *parser,
                                 const uint8_t *data,
                                 size_t length,
-                                iterm_token *token);
+                                lterm_token *token);
 
 #ifdef __cplusplus
 }

@@ -2,29 +2,29 @@ core_includes = include_directories('..', '../include')
 
 sources = [
   'stub_terminal.c',
-  'iterm_pty.c',
-  'parser/iterm_parser.c',
-  'parser/iterm_state_machine.c',
-  'parser/iterm_token.c',
-  'parser/iterm_reader.c',
+  'lterm_pty.c',
+  'parser/lterm_parser.c',
+  'parser/lterm_state_machine.c',
+  'parser/lterm_token.c',
+  'parser/lterm_reader.c',
   'parser/vt100_control_parser.c',
   'parser/vt100_csi_parser.c',
   'parser/vt100_string_parser.c',
   'parser/vt100_ansi_parser.c',
   'parser/vt100_osc_parser.c',
   'parser/vt100_dcs_parser.c',
-  'iterm_screen.c',
+  'lterm_screen.c',
 ]
 
-libiterm_core = library(
-  'iterm_core',
+liblterm_core = library(
+  'lterm_core',
   sources,
   include_directories : core_includes,
   install : false
 )
 
-libiterm_core_dep = declare_dependency(
-  link_with : libiterm_core,
+liblterm_core_dep = declare_dependency(
+  link_with : liblterm_core,
   include_directories : core_includes
 )
 

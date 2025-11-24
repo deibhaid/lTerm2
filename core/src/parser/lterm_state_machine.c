@@ -1,33 +1,33 @@
-#include "iterm_state_machine.h"
+#include "lterm_state_machine.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct {
     uint32_t character;
-    iterm_state *to_state;
-    iterm_state_action action;
+    lterm_state *to_state;
+    lterm_state_action action;
     void *user_data;
 } transition;
 
-struct iterm_state {
+struct lterm_state {
     char *name;
     uintptr_t identifier;
-    iterm_state_action entry_action;
+    lterm_state_action entry_action;
     void *entry_user_data;
-    iterm_state_action exit_action;
+    lterm_state_action exit_action;
     void *exit_user_data;
     transition *transitions;
     size_t transition_count;
     size_t transition_capacity;
 };
 
-struct iterm_state_machine {
-    iterm_state **states;
+struct lterm_state_machine {
+    lterm_state **states;
     size_t state_count;
     size_t state_capacity;
-    iterm_state *ground_state;
-    iterm_state *current_state;
+    lterm_state *ground_state;
+    lterm_state *current_state;
 };
 
 static char *
@@ -44,10 +44,10 @@ duplicate_string(const char *source)
     return copy;
 }
 
-iterm_state *
-iterm_state_create(const char *name, uintptr_t identifier)
+lterm_state *
+lterm_state_create(const char *name, uintptr_t identifier)
 {
-    iterm_state *state = calloc(1, sizeof(*state));
+    lterm_state *state = calloc(1, sizeof(*state));
     if (!state) {
         return NULL;
     }
@@ -57,7 +57,7 @@ iterm_state_create(const char *name, uintptr_t identifier)
 }
 
 void
-iterm_state_destroy(iterm_state *state)
+lterm_state_destroy(lterm_state *state)
 {
     if (!state) {
         return;
@@ -68,7 +68,7 @@ iterm_state_destroy(iterm_state *state)
 }
 
 void
-iterm_state_set_entry_action(iterm_state *state, iterm_state_action action, void *user_data)
+lterm_state_set_entry_action(lterm_state *state, lterm_state_action action, void *user_data)
 {
     if (!state) {
         return;
@@ -78,7 +78,7 @@ iterm_state_set_entry_action(iterm_state *state, iterm_state_action action, void
 }
 
 void
-iterm_state_set_exit_action(iterm_state *state, iterm_state_action action, void *user_data)
+lterm_state_set_exit_action(lterm_state *state, lterm_state_action action, void *user_data)
 {
     if (!state) {
         return;
@@ -88,7 +88,7 @@ iterm_state_set_exit_action(iterm_state *state, iterm_state_action action, void 
 }
 
 static transition *
-add_transition_slot(iterm_state *state)
+add_transition_slot(lterm_state *state)
 {
     if (!state) {
         return NULL;
@@ -106,10 +106,10 @@ add_transition_slot(iterm_state *state)
 }
 
 void
-iterm_state_add_transition(iterm_state *state,
+lterm_state_add_transition(lterm_state *state,
                            uint32_t character,
-                           iterm_state *to_state,
-                           iterm_state_action action,
+                           lterm_state *to_state,
+                           lterm_state_action action,
                            void *user_data)
 {
     transition *slot = add_transition_slot(state);
@@ -123,38 +123,38 @@ iterm_state_add_transition(iterm_state *state,
 }
 
 void
-iterm_state_add_transition_range(iterm_state *state,
+lterm_state_add_transition_range(lterm_state *state,
                                  uint32_t start,
                                  uint32_t length,
-                                 iterm_state *to_state,
-                                 iterm_state_action action,
+                                 lterm_state *to_state,
+                                 lterm_state_action action,
                                  void *user_data)
 {
     for (uint32_t i = 0; i < length; ++i) {
-        iterm_state_add_transition(state, start + i, to_state, action, user_data);
+        lterm_state_add_transition(state, start + i, to_state, action, user_data);
     }
 }
 
 uintptr_t
-iterm_state_identifier(const iterm_state *state)
+lterm_state_identifier(const lterm_state *state)
 {
     return state ? state->identifier : 0;
 }
 
 const char *
-iterm_state_name(const iterm_state *state)
+lterm_state_name(const lterm_state *state)
 {
     return state ? state->name : NULL;
 }
 
-iterm_state_machine *
-iterm_state_machine_create(void)
+lterm_state_machine *
+lterm_state_machine_create(void)
 {
-    return calloc(1, sizeof(iterm_state_machine));
+    return calloc(1, sizeof(lterm_state_machine));
 }
 
 void
-iterm_state_machine_destroy(iterm_state_machine *machine)
+lterm_state_machine_destroy(lterm_state_machine *machine)
 {
     if (!machine) {
         return;
@@ -164,14 +164,14 @@ iterm_state_machine_destroy(iterm_state_machine *machine)
 }
 
 void
-iterm_state_machine_add_state(iterm_state_machine *machine, iterm_state *state)
+lterm_state_machine_add_state(lterm_state_machine *machine, lterm_state *state)
 {
     if (!machine || !state) {
         return;
     }
     if (machine->state_count == machine->state_capacity) {
         size_t new_capacity = machine->state_capacity ? machine->state_capacity * 2 : 8;
-        iterm_state **new_states = realloc(machine->states, new_capacity * sizeof(iterm_state *));
+        lterm_state **new_states = realloc(machine->states, new_capacity * sizeof(lterm_state *));
         if (!new_states) {
             return;
         }
@@ -182,7 +182,7 @@ iterm_state_machine_add_state(iterm_state_machine *machine, iterm_state *state)
 }
 
 void
-iterm_state_machine_set_ground_state(iterm_state_machine *machine, iterm_state *state)
+lterm_state_machine_set_ground_state(lterm_state_machine *machine, lterm_state *state)
 {
     if (!machine) {
         return;
@@ -194,7 +194,7 @@ iterm_state_machine_set_ground_state(iterm_state_machine *machine, iterm_state *
 }
 
 static transition *
-find_transition(iterm_state *state, uint32_t character)
+find_transition(lterm_state *state, uint32_t character)
 {
     if (!state) {
         return NULL;
@@ -208,7 +208,7 @@ find_transition(iterm_state *state, uint32_t character)
 }
 
 void
-iterm_state_machine_handle_char(iterm_state_machine *machine, uint8_t ch)
+lterm_state_machine_handle_char(lterm_state_machine *machine, uint8_t ch)
 {
     if (!machine || !machine->current_state) {
         return;
@@ -218,8 +218,8 @@ iterm_state_machine_handle_char(iterm_state_machine *machine, uint8_t ch)
         return;
     }
 
-    iterm_state *from_state = machine->current_state;
-    iterm_state *to_state = trans->to_state;
+    lterm_state *from_state = machine->current_state;
+    lterm_state *to_state = trans->to_state;
     bool changing = (to_state && to_state != from_state);
 
     if (changing && from_state->exit_action) {
@@ -238,14 +238,14 @@ iterm_state_machine_handle_char(iterm_state_machine *machine, uint8_t ch)
     }
 }
 
-iterm_state *
-iterm_state_machine_find_state(const iterm_state_machine *machine, uintptr_t identifier)
+lterm_state *
+lterm_state_machine_find_state(const lterm_state_machine *machine, uintptr_t identifier)
 {
     if (!machine) {
         return NULL;
     }
     for (size_t i = 0; i < machine->state_count; ++i) {
-        if (iterm_state_identifier(machine->states[i]) == identifier) {
+        if (lterm_state_identifier(machine->states[i]) == identifier) {
             return machine->states[i];
         }
     }

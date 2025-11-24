@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "iterm_token_types.h"
+#include "lterm_token_types.h"
 
 void
 vt100_dcs_parser_init(vt100_dcs_parser *parser)
@@ -26,8 +26,8 @@ vt100_dcs_parser_reset(vt100_dcs_parser *parser)
 
 size_t
 vt100_dcs_parser_decode(vt100_dcs_parser *parser,
-                        iterm_parser_context *context,
-                        iterm_token *token)
+                        lterm_parser_context *context,
+                        lterm_token *token)
 {
     if (!parser || !context || !token) {
         return 0;
@@ -36,19 +36,19 @@ vt100_dcs_parser_decode(vt100_dcs_parser *parser,
     size_t consumed = 0;
     bool finished = false;
 
-    while (iterm_parser_can_advance(context)) {
-        uint8_t c = iterm_parser_consume(context);
+    while (lterm_parser_can_advance(context)) {
+        uint8_t c = lterm_parser_consume(context);
         consumed++;
 
         if (c == 0x9C) {
             finished = true;
             break;
         }
-        if (c == ITERM_CC_ESC) {
-            if (!iterm_parser_can_advance(context)) {
+        if (c == LTERM_CC_ESC) {
+            if (!lterm_parser_can_advance(context)) {
                 return 0;
             }
-            uint8_t next = iterm_parser_consume(context);
+            uint8_t next = lterm_parser_consume(context);
             consumed++;
             if (next == '\\') {
                 finished = true;
@@ -73,11 +73,11 @@ vt100_dcs_parser_decode(vt100_dcs_parser *parser,
 
     parser->buffer[parser->length] = '\0';
     char *payload = parser->buffer;
-    iterm_token_type type = ITERM_TOKEN_DCS;
+    lterm_token_type type = LTERM_TOKEN_DCS;
     const char tmux_prefix[] = "tmux;";
     if (parser->length >= (int)strlen(tmux_prefix) &&
         strncmp(parser->buffer, tmux_prefix, strlen(tmux_prefix)) == 0) {
-        type = ITERM_TOKEN_TMUX;
+        type = LTERM_TOKEN_TMUX;
         payload += strlen(tmux_prefix);
         char *exit_marker = strstr(payload, "%exit");
         if (exit_marker) {
@@ -89,7 +89,7 @@ vt100_dcs_parser_decode(vt100_dcs_parser *parser,
         }
     }
     token->type = type;
-    iterm_token_set_ascii(token, (const uint8_t *)payload, strlen(payload));
+    lterm_token_set_ascii(token, (const uint8_t *)payload, strlen(payload));
     parser->length = 0;
     return consumed;
 }

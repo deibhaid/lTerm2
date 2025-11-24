@@ -7,7 +7,7 @@ typedef struct {
     GtkWidget *area;
     GString *buffer;
     PangoFontDescription *font;
-    const iterm_screen *screen;
+    const lterm_screen *screen;
 } TerminalView;
 
 static void
@@ -51,7 +51,7 @@ terminal_view_draw(GtkDrawingArea *area,
         for (size_t row = 0; row < view->screen->grid.rows; ++row) {
             GString *line = g_string_new("");
             for (size_t col = 0; col < view->screen->grid.cols; ++col) {
-                iterm_cell cell = view->screen->grid.cells[row * view->screen->grid.cols + col];
+                lterm_cell cell = view->screen->grid.cells[row * view->screen->grid.cols + col];
                 gunichar ch = cell.codepoint ? cell.codepoint : ' ';
                 g_string_append_unichar(line, ch);
             }
@@ -114,7 +114,7 @@ terminal_view_append_text(GtkWidget *widget, const char *text)
 }
 
 void
-terminal_view_set_screen(GtkWidget *widget, const iterm_screen *screen)
+terminal_view_set_screen(GtkWidget *widget, const lterm_screen *screen)
 {
     TerminalView *view = g_object_get_data(G_OBJECT(widget), "terminal-view");
     if (!view) {

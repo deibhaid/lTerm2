@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "iterm_token.h"
+#include "lterm_token.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +18,7 @@ void vt100_osc_parser_reset(vt100_osc_parser *parser);
 size_t vt100_osc_parser_decode(vt100_osc_parser *parser,
                                const uint8_t *data,
                                size_t length,
-                               iterm_token *token);
+                               lterm_token *token);
 
 #ifdef __cplusplus
 }

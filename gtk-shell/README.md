@@ -11,13 +11,13 @@ Minimal GTK4 application that will evolve into the Linux front-end for lTerm2.
 cd gtk-shell
 meson setup builddir
 meson compile -C builddir
-./builddir/src/iterm2-gtk
+./builddir/src/lterm2-gtk
 ```
 
-The current window spawns your login shell inside a PTY, feeds it through `libiterm-core`, and renders the screen grid via a Cairo/Pango drawing area. Keyboard input (printable characters, arrows, Enter, Backspace, etc.) is forwarded directly to the PTY so you can interact with the shell. The tab/status widgets are still placeholders.
+The current window spawns your login shell inside a PTY, feeds it through `liblterm-core`, and renders the screen grid via a Cairo/Pango drawing area. Keyboard input (printable characters, arrows, Enter, Backspace, etc.) is forwarded directly to the PTY so you can interact with the shell. The tab/status widgets are still placeholders.
 
 ## Next Steps
-- Expand libiterm-core coverage (full CSI/OSC/SGR handling, scrollback operations).
+- Expand liblterm-core coverage (full CSI/OSC/SGR handling, scrollback operations).
 - Flesh out widgets: tab manager, split pane controller, profile selector, status bar.
 - Integrate DBus automation and Linux platform services (notifications, keyring, hotkeys).
 

@@ -7,17 +7,17 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
 
-#include "iterm_screen.h"
-#include "iterm_pty.h"
+#include "lterm_screen.h"
+#include "lterm_pty.h"
 #include "terminal_view.h"
-#include "iterm_parser.h"
-#include "iterm_token.h"
-#include "iterm_token_types.h"
+#include "lterm_parser.h"
+#include "lterm_token.h"
+#include "lterm_token_types.h"
 
 struct _CoreBridge {
-    iterm_parser *parser;
-    iterm_screen screen;
-    iterm_pty pty;
+    lterm_parser *parser;
+    lterm_screen screen;
+    lterm_pty pty;
     GtkWindow *window;
     GtkWidget *terminal_view;
     GtkWidget *title_label;
@@ -28,15 +28,15 @@ struct _CoreBridge {
     gboolean using_screen;
 };
 
-static void parser_callback(const iterm_token *token, void *user_data);
+static void parser_callback(const lterm_token *token, void *user_data);
 
 static bool
 pty_write_all(CoreBridge *bridge, const uint8_t *data, size_t length)
 {
-    if (!bridge || !data || !length || !iterm_pty_is_active(&bridge->pty)) {
+    if (!bridge || !data || !length || !lterm_pty_is_active(&bridge->pty)) {
         return false;
     }
-    ssize_t written = iterm_pty_write(&bridge->pty, data, length);
+    ssize_t written = lterm_pty_write(&bridge->pty, data, length);
     return written == (ssize_t)length;
 }
 
@@ -91,7 +91,7 @@ stop_pty(CoreBridge *bridge)
         g_io_channel_unref(bridge->pty_channel);
         bridge->pty_channel = NULL;
     }
-    iterm_pty_close(&bridge->pty);
+    lterm_pty_close(&bridge->pty);
 }
 
 static gboolean
@@ -108,9 +108,9 @@ pty_watch_cb(GIOChannel *source, GIOCondition condition, gpointer user_data)
     }
 
     uint8_t buffer[4096];
-    ssize_t n = iterm_pty_read(&bridge->pty, buffer, sizeof(buffer));
+    ssize_t n = lterm_pty_read(&bridge->pty, buffer, sizeof(buffer));
     if (n > 0) {
-        iterm_parser_feed(bridge->parser, buffer, (size_t)n, parser_callback, bridge);
+        lterm_parser_feed(bridge->parser, buffer, (size_t)n, parser_callback, bridge);
         gtk_widget_queue_draw(bridge->terminal_view);
     }
 
@@ -118,19 +118,19 @@ pty_watch_cb(GIOChannel *source, GIOCondition condition, gpointer user_data)
 }
 
 static const char *
-describe_token_type(iterm_token_type type)
+describe_token_type(lterm_token_type type)
 {
     switch (type) {
-        case ITERM_TOKEN_OSC:
-        case ITERM_TOKEN_XTERM_WIN_TITLE:
-        case ITERM_TOKEN_XTERM_ICON_TITLE:
-        case ITERM_TOKEN_XTERM_WINICON_TITLE:
+        case LTERM_TOKEN_OSC:
+        case LTERM_TOKEN_XTERM_WIN_TITLE:
+        case LTERM_TOKEN_XTERM_ICON_TITLE:
+        case LTERM_TOKEN_XTERM_WINICON_TITLE:
             return "OSC";
-        case ITERM_TOKEN_CLIPBOARD_CONTROL:
+        case LTERM_TOKEN_CLIPBOARD_CONTROL:
             return "Clipboard";
-        case ITERM_TOKEN_DCS:
+        case LTERM_TOKEN_DCS:
             return "DCS";
-        case ITERM_TOKEN_ANSI_RIS:
+        case LTERM_TOKEN_ANSI_RIS:
             return "ANSI RIS";
         default:
             return "Token";
@@ -138,7 +138,7 @@ describe_token_type(iterm_token_type type)
 }
 
 static void
-handle_osc_title(CoreBridge *bridge, const iterm_token *token)
+handle_osc_title(CoreBridge *bridge, const lterm_token *token)
 {
     if (!bridge || (!bridge->title_label && !bridge->window)) {
         return;
@@ -160,7 +160,7 @@ handle_osc_title(CoreBridge *bridge, const iterm_token *token)
 }
 
 static void
-handle_clipboard(CoreBridge *bridge, const iterm_token *token)
+handle_clipboard(CoreBridge *bridge, const lterm_token *token)
 {
     if (!bridge) {
         return;
@@ -199,7 +199,7 @@ handle_clipboard(CoreBridge *bridge, const iterm_token *token)
 }
 
 static void
-handle_tmux(CoreBridge *bridge, const iterm_token *token)
+handle_tmux(CoreBridge *bridge, const lterm_token *token)
 {
     if (!bridge || !bridge->tmux_label) {
         return;
@@ -216,7 +216,7 @@ handle_tmux(CoreBridge *bridge, const iterm_token *token)
 }
 
 static void
-handle_text(CoreBridge *bridge, const iterm_token *token)
+handle_text(CoreBridge *bridge, const lterm_token *token)
 {
     if (!bridge || !bridge->terminal_view) {
         return;
@@ -234,23 +234,23 @@ handle_text(CoreBridge *bridge, const iterm_token *token)
 }
 
 static void
-parser_callback(const iterm_token *token, void *user_data)
+parser_callback(const lterm_token *token, void *user_data)
 {
     CoreBridge *bridge = user_data;
-    if (!bridge || token->type == ITERM_TOKEN_WAIT) {
+    if (!bridge || token->type == LTERM_TOKEN_WAIT) {
         return;
     }
     switch (token->type) {
-        case ITERM_TOKEN_XTERM_WIN_TITLE:
-        case ITERM_TOKEN_XTERM_WINICON_TITLE:
-        case ITERM_TOKEN_XTERM_ICON_TITLE:
+        case LTERM_TOKEN_XTERM_WIN_TITLE:
+        case LTERM_TOKEN_XTERM_WINICON_TITLE:
+        case LTERM_TOKEN_XTERM_ICON_TITLE:
             handle_osc_title(bridge, token);
             break;
-        case ITERM_TOKEN_CLIPBOARD_CONTROL:
+        case LTERM_TOKEN_CLIPBOARD_CONTROL:
             handle_clipboard(bridge, token);
             break;
-        case ITERM_TOKEN_TMUX:
-        case ITERM_TOKEN_DCS:
+        case LTERM_TOKEN_TMUX:
+        case LTERM_TOKEN_DCS:
             handle_tmux(bridge, token);
             break;
         default:
@@ -267,9 +267,9 @@ core_bridge_new(GtkWindow *window,
                 GtkWidget *tmux_label)
 {
     CoreBridge *bridge = g_new0(CoreBridge, 1);
-    iterm_screen_init(&bridge->screen, 24, 80);
-    iterm_pty_init(&bridge->pty);
-    bridge->parser = iterm_parser_new(&bridge->screen);
+    lterm_screen_init(&bridge->screen, 24, 80);
+    lterm_pty_init(&bridge->pty);
+    bridge->parser = lterm_parser_new(&bridge->screen);
     bridge->window = window;
     bridge->terminal_view = terminal_view;
     bridge->title_label = title_label;
@@ -287,9 +287,9 @@ core_bridge_free(CoreBridge *bridge)
     }
     stop_pty(bridge);
     if (bridge->parser) {
-        iterm_parser_free(bridge->parser);
+        lterm_parser_free(bridge->parser);
     }
-    iterm_screen_free(&bridge->screen);
+    lterm_screen_free(&bridge->screen);
     g_free(bridge);
 }
 
@@ -304,7 +304,7 @@ core_bridge_feed_demo(CoreBridge *bridge)
                        "Welcome to lTerm2 on Linux!\nEnjoy the new GTK shell.\n"
                        "\x1b]52;c;c29weQ==\x07"
                        "\x1bPtmux;session-ready%exit\x1b\\";
-    iterm_parser_feed(bridge->parser,
+    lterm_parser_feed(bridge->parser,
                       (const uint8_t *)demo,
                       strlen(demo),
                       parser_callback,
@@ -321,12 +321,12 @@ core_bridge_start_shell(CoreBridge *bridge, const char *shell_path)
 
     stop_pty(bridge);
 
-    if (!iterm_pty_spawn_shell(&bridge->pty, shell_path)) {
+    if (!lterm_pty_spawn_shell(&bridge->pty, shell_path)) {
         g_warning("Failed to spawn shell for PTY session");
         return false;
     }
 
-    bridge->pty_channel = g_io_channel_unix_new(iterm_pty_get_fd(&bridge->pty));
+    bridge->pty_channel = g_io_channel_unix_new(lterm_pty_get_fd(&bridge->pty));
     g_io_channel_set_encoding(bridge->pty_channel, NULL, NULL);
     g_io_channel_set_buffered(bridge->pty_channel, FALSE);
     g_io_channel_set_close_on_unref(bridge->pty_channel, FALSE);
@@ -356,7 +356,7 @@ handle_control_combo(uint8_t *buffer, size_t *length, guint keyval)
 bool
 core_bridge_handle_key(CoreBridge *bridge, guint keyval, GdkModifierType state)
 {
-    if (!bridge || !iterm_pty_is_active(&bridge->pty)) {
+    if (!bridge || !lterm_pty_is_active(&bridge->pty)) {
         return false;
     }
 

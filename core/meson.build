@@ -1,5 +1,5 @@
 project(
-  'iterm-core',
+  'lterm-core',
   'c',
   version : '0.0.1',
   default_options : [
